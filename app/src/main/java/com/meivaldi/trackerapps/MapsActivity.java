@@ -426,5 +426,68 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return Radius * c;
     }
 
+    private void goingRight() {
+        int Radius = 6371;
+
+        Double new_longitude = currentLoc.longitude + (0.01 / Radius) * (180 / Math.PI) / Math.cos(currentLoc.latitude * (Math.PI/180));
+        LatLng newPosition = new LatLng(currentLoc.latitude, new_longitude);
+        currentLoc = newPosition;
+
+        if (marker != null) marker.remove();
+        marker = mMap.addMarker(new MarkerOptions()
+                .position(newPosition)
+                .title("Starter Point")
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
+    }
+
+    private void goingLeft() {
+        int Radius = 6371;
+
+        Double new_longitude = currentLoc.longitude - (0.01 / Radius) * (180 / Math.PI) / Math.cos(currentLoc.latitude * (Math.PI/180));
+        LatLng newPosition = new LatLng(currentLoc.latitude, new_longitude);
+        currentLoc = newPosition;
+
+        if (marker != null) marker.remove();
+        marker = mMap.addMarker(new MarkerOptions()
+                .position(newPosition)
+                .title("Starter Point")
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
+    }
+
+    private void goingUp() {
+        int Radius = 6371;
+
+        Double new_latitude  = currentLoc.latitude  + (0.01 / Radius) * (180 / Math.PI);
+        LatLng newPosition = new LatLng(new_latitude, currentLoc.longitude);
+        currentLoc = newPosition;
+
+        if (marker != null) marker.remove();
+        marker = mMap.addMarker(new MarkerOptions()
+                .position(newPosition)
+                .title("Starter Point")
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
+    }
+
+    private void goingDown() {
+        int Radius = 6371;
+
+        Double new_latitude  = currentLoc.latitude  - (0.01 / Radius) * (180 / Math.PI);
+        LatLng newPosition = new LatLng(new_latitude, currentLoc.longitude);
+        currentLoc = newPosition;
+
+        if (marker != null) marker.remove();
+        marker = mMap.addMarker(new MarkerOptions()
+                .position(newPosition)
+                .title("Starter Point")
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
+    }
 
 }
