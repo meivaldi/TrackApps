@@ -65,11 +65,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final int PERMISSION_CALLBACK_CONSTANT = 100;
     private static final double MIN_DISTANCE = 0.05;
+
     private Marker marker;
     private List<Marker> markers = new ArrayList<>();
     private Button input, inputBtn;
     private Dialog inputDialog;
     private EditText jumlahET;
+    private ApiInterface apiService;
     private int tpsId = 0, position = 0;
 
     @Override
@@ -80,7 +82,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_maps);
 
-        final ApiInterface apiService = ApiClient.getClient().create(ApiInterface.class);
+        apiService = ApiClient.getClient().create(ApiInterface.class);
         input = findViewById(R.id.input);
 
         pDialog = new ProgressDialog(MapsActivity.this);
@@ -279,67 +281,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 });
             }
         });
-
-        Call<MarkerResponse> call = apiService.getAllMarker("2");
-        call.enqueue(new Callback<MarkerResponse>() {
-            @Override
-            public void onResponse(Call<MarkerResponse> call, Response<MarkerResponse> response) {
-                MarkerResponse res = response.body();
-
-                if (!res.isStatus()) {
-                    Log.d("DATA", new Gson().toJson(res));
-                    tpaList.addAll(res.getTpaList());
-
-                    int i=0;
-                    for (TPA tpa: tpaList) {
-                        Log.d("DATA", tpa.getLatitude() + " " + tpa.getLongitude());
-                        int icon;
-
-                        if (tpa.isInput()) {
-                            icon = R.drawable.bin;
-                        } else {
-                            icon = R.drawable.bin_not;
-                        }
-
-                        LatLng pick = new LatLng(Float.parseFloat(tpa.getLatitude()), Float.parseFloat(tpa.getLongitude()));
-                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                                Double.parseDouble(tpa.getLongitude())), pick);
-
-                        if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                            Log.d("DATA", "Position: " + position);
-                            Log.d("DATA", "id: " + tpsId);
-
-                            input.setVisibility(View.VISIBLE);
-                            tpsId = tpa.getId();
-                            position = i;
-                        } else {
-                            input.setVisibility(View.GONE);
-                        }
-
-                        Marker marker = mMap.addMarker(new MarkerOptions()
-                                    .position(pick)
-                                    .title(tpa.getNama())
-                                    .icon(BitmapDescriptorFactory.fromResource(icon)));
-
-                        markers.add(marker);
-                    }
-
-                    i++;
-                } else {
-                    Log.d("DATA", new Gson().toJson(res));
-                    Toast.makeText(MapsActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-
-                pDialog.dismiss();
-            }
-
-            @Override
-            public void onFailure(Call<MarkerResponse> call, Throwable t) {
-                Toast.makeText(MapsActivity.this, "Koneksi error!", Toast.LENGTH_SHORT).show();
-                Log.e("DATA", t.getMessage());
-                pDialog.dismiss();
-            }
-        });
     }
 
     @Override
@@ -353,6 +294,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
+
         fusedLocationClient.getLastLocation().addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
             @Override
             public void onSuccess(Location location) {
@@ -389,6 +331,72 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 } else {
                     Toast.makeText(MapsActivity.this, "Lokasi tidak ada!", Toast.LENGTH_SHORT).show();
                 }
+            }
+        });
+
+        apiService = ApiClient.getClient().create(ApiInterface.class);
+        Call<MarkerResponse> call = apiService.getAllMarker("2");
+        call.enqueue(new Callback<MarkerResponse>() {
+            @Override
+            public void onResponse(Call<MarkerResponse> call, Response<MarkerResponse> response) {
+                MarkerResponse res = response.body();
+
+                if (!res.isStatus()) {
+                    Log.d("DATA", new Gson().toJson(res));
+                    tpaList.addAll(res.getTpaList());
+
+                    for (TPA tpa: tpaList) {
+                        Log.d("DATA", tpa.getLatitude() + " " + tpa.getLongitude());
+                        int icon;
+
+                        if (tpa.isInput()) {
+                            icon = R.drawable.bin;
+                        } else {
+                            icon = R.drawable.bin_not;
+                        }
+
+                        LatLng pick = new LatLng(Float.parseFloat(tpa.getLatitude()), Float.parseFloat(tpa.getLongitude()));
+                        Marker pickMarker = mMap.addMarker(new MarkerOptions()
+                                .position(pick)
+                                .title(tpa.getNama())
+                                .icon(BitmapDescriptorFactory.fromResource(icon)));
+
+                        markers.add(pickMarker);
+                    }
+
+                    int i=0;
+                    for (TPA tpa: tpaList) {
+                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                Double.parseDouble(tpa.getLongitude())), marker.getPosition());
+
+                        if (distance <= MIN_DISTANCE && !tpa.isInput()) {
+                            Log.d("DATA", "Position: " + position);
+                            Log.d("DATA", "id: " + tpsId);
+
+                            input.setVisibility(View.VISIBLE);
+                            tpsId = tpa.getId();
+                            position = i;
+
+                            break;
+                        } else {
+                            input.setVisibility(View.GONE);
+                        }
+
+                        i++;
+                    }
+                } else {
+                    Log.d("DATA", new Gson().toJson(res));
+                    Toast.makeText(MapsActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+
+                pDialog.dismiss();
+            }
+
+            @Override
+            public void onFailure(Call<MarkerResponse> call, Throwable t) {
+                Toast.makeText(MapsActivity.this, "Koneksi error!", Toast.LENGTH_SHORT).show();
+                Log.e("DATA", t.getMessage());
+                pDialog.dismiss();
             }
         });
     }
