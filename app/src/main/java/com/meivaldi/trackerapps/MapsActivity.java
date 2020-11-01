@@ -22,21 +22,18 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -69,7 +66,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     };
 
     private static final int PERMISSION_CALLBACK_CONSTANT = 100;
-    private MarkerOptions options;
+    private Marker marker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,13 +120,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if (location != null) {
                         Log.d("DATA", location.getLatitude() + " " + location.getLongitude());
                         LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                        mMap.addMarker(options).remove();
-
-                        options = new MarkerOptions()
+                        marker.remove();
+                        marker = mMap.addMarker(new MarkerOptions()
                                 .position(loc)
                                 .title("Starter Point")
-                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck));
-                        mMap.addMarker(options);
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
 
                         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 20f));
                     }
@@ -163,7 +158,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     public void onSuccess(Location location) {
                         if (location != null) {
                             LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                            mMap.addMarker(new MarkerOptions()
+                            marker.remove();
+                            marker = mMap.addMarker(new MarkerOptions()
                                     .position(loc)
                                     .title("Starter Point")
                                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
@@ -208,6 +204,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onFailure(Call<MarkerResponse> call, Throwable t) {
                 Toast.makeText(MapsActivity.this, "Koneksi error!", Toast.LENGTH_SHORT).show();
+                Log.e("DATA", t.getMessage());
                 pDialog.dismiss();
             }
         });
@@ -220,7 +217,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setIndoorEnabled(false);
         mMap.setBuildingsEnabled(true);
 
-        LatLng place = new LatLng(3.623429, 98.830006);
         if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
@@ -230,11 +226,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onSuccess(Location location) {
                 if (location != null) {
                     LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                    options = new MarkerOptions()
+                    marker = mMap.addMarker(new MarkerOptions()
                             .position(loc)
                             .title("Starter Point")
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck));
-                    mMap.addMarker(options);
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
 
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 20f));
                 } else {
