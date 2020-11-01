@@ -1,25 +1,22 @@
 package com.meivaldi.trackerapps;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.IntentSender;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -41,9 +38,11 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 import com.meivaldi.trackerapps.api.ApiClient;
 import com.meivaldi.trackerapps.api.ApiInterface;
+import com.meivaldi.trackerapps.model.ApiResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
 import com.meivaldi.trackerapps.model.TPA;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,7 +64,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     };
 
     private static final int PERMISSION_CALLBACK_CONSTANT = 100;
-    private Marker marker;
+    private static final double MIN_DISTANCE = 0.05;
+    private Marker marker, currentMarker;
+    private Button input, inputBtn;
+    private Dialog inputDialog;
+    private EditText jumlahET;
+    private int tpsId = 0, position = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +78,71 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_maps);
+
+        final ApiInterface apiService = ApiClient.getClient().create(ApiInterface.class);
+        input = findViewById(R.id.input);
+
+        pDialog = new ProgressDialog(MapsActivity.this);
+        pDialog.setMessage("Memuat...");
+        pDialog.setCancelable(false);
+        pDialog.show();
+
+        inputDialog = new Dialog(MapsActivity.this);
+        inputDialog.setCancelable(false);
+        inputDialog.setContentView(R.layout.input_dialog);
+        inputDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        inputBtn = inputDialog.findViewById(R.id.inputBtn);
+        jumlahET = inputDialog.findViewById(R.id.jumlahET);
+
+        inputBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pDialog.setMessage("Memroses...");
+                pDialog.show();
+
+                String jumlah = jumlahET.getText().toString();
+                Call<ApiResponse> call = apiService.inputGarbage(tpsId, jumlah);
+                call.enqueue(new Callback<ApiResponse>() {
+                    @Override
+                    public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                        ApiResponse res = response.body();
+
+                        if (!res.isStatus()) {
+                            if (currentMarker != null) currentMarker.remove();
+
+                            TPA currentTPA = tpaList.get(position);
+                            LatLng current = new LatLng(Double.parseDouble(currentTPA.getLatitude()),
+                                    Double.parseDouble(currentTPA.getLongitude()));
+
+                            currentMarker = mMap.addMarker(new MarkerOptions()
+                                    .position(current)
+                                    .title(currentTPA.getNama())
+                                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.bin)));
+
+                            input.setVisibility(View.GONE);
+                            tpaList.get(position).setInput(true);
+                        }
+
+                        Toast.makeText(MapsActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
+                        pDialog.dismiss();
+                        inputDialog.dismiss();
+                    }
+
+                    @Override
+                    public void onFailure(Call<ApiResponse> call, Throwable t) {
+                        Toast.makeText(MapsActivity.this, "Gagal menginput data!", Toast.LENGTH_SHORT).show();
+                        pDialog.dismiss();
+                    }
+                });
+            }
+        });
+
+        input.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                inputDialog.show();
+            }
+        });
 
         if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -101,8 +170,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } else {
                 ActivityCompat.requestPermissions(MapsActivity.this, permissionsRequired, PERMISSION_CALLBACK_CONSTANT);
             }
-        } else {
-            proceedAfterPermission();
         }
 
         LocationRequest locationRequest = LocationRequest.create();
@@ -115,17 +182,47 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (locationResult == null) {
                     return;
                 }
+
                 for (Location location : locationResult.getLocations()) {
                     if (location != null) {
                         Log.d("DATA", location.getLatitude() + " " + location.getLongitude());
                         LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                        marker.remove();
+                        if (marker != null) marker.remove();
                         marker = mMap.addMarker(new MarkerOptions()
                                 .position(loc)
                                 .title("Starter Point")
                                 .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
 
                         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 20f));
+
+                        int i = 0;
+                        for (TPA tpa: tpaList) {
+                            double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                    Double.parseDouble(tpa.getLongitude())), loc);
+
+                            if (distance <= MIN_DISTANCE && !tpa.isInput()) {
+                                Log.d("DATA", "Position: " + position);
+                                Log.d("DATA", "id: " + tpsId);
+
+                                input.setVisibility(View.VISIBLE);
+                                tpsId = tpa.getId();
+                                position = i;
+
+                                LatLng current = new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                        Double.parseDouble(tpa.getLongitude()));
+
+                                currentMarker = mMap.addMarker(new MarkerOptions()
+                                        .position(current)
+                                        .title(tpa.getNama())
+                                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.bin)));
+                                break;
+                            } else {
+                                input.setVisibility(View.GONE);
+                            }
+
+                            i++;
+                            Log.d("DATA", "Distance: " + distance);
+                        }
                     }
                 }
             }
@@ -136,11 +233,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
-        pDialog = new ProgressDialog(MapsActivity.this);
-        pDialog.setMessage("Memuat...");
-        pDialog.setCancelable(false);
-        pDialog.show();
 
         FloatingActionButton location = findViewById(R.id.location);
         location.setOnClickListener(new View.OnClickListener() {
@@ -157,13 +249,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     public void onSuccess(Location location) {
                         if (location != null) {
                             LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                            marker.remove();
+                            if (marker != null) marker.remove();
                             marker = mMap.addMarker(new MarkerOptions()
                                     .position(loc)
                                     .title("Starter Point")
                                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
 
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 20f));
+
+                            int i = 0;
+                            for (TPA tpa: tpaList) {
+                                double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                        Double.parseDouble(tpa.getLongitude())), loc);
+
+                                if (distance <= MIN_DISTANCE && !tpa.isInput()) {
+                                    Log.d("DATA", "Position: " + position);
+                                    Log.d("DATA", "id: " + tpsId);
+
+                                    input.setVisibility(View.VISIBLE);
+                                    tpsId = tpa.getId();
+                                    position = i;
+                                    break;
+                                } else {
+                                    input.setVisibility(View.GONE);
+                                }
+
+                                i++;
+                                Log.d("DATA", "Distance: " + distance);
+                            }
+
                         } else {
                             Toast.makeText(MapsActivity.this, "Lokasi tidak ada!", Toast.LENGTH_SHORT).show();
                         }
@@ -172,9 +286,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        ApiInterface apiService = ApiClient.getClient().create(ApiInterface.class);
         Call<MarkerResponse> call = apiService.getAllMarker("1");
-
         call.enqueue(new Callback<MarkerResponse>() {
             @Override
             public void onResponse(Call<MarkerResponse> call, Response<MarkerResponse> response) {
@@ -186,11 +298,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     for (TPA tpa: tpaList) {
                         Log.d("DATA", tpa.getLatitude() + " " + tpa.getLongitude());
-                        LatLng pick = new LatLng(Float.valueOf(tpa.getLatitude()), Float.parseFloat(tpa.getLongitude()));
+                        int icon;
+
+                        if (tpa.isInput()) {
+                            icon = R.drawable.bin;
+                        } else {
+                            icon = R.drawable.bin_not;
+                        }
+
+                        LatLng pick = new LatLng(Float.parseFloat(tpa.getLatitude()), Float.parseFloat(tpa.getLongitude()));
                         mMap.addMarker(new MarkerOptions()
                                 .position(pick)
                                 .title(tpa.getNama())
-                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.bin_not)));
+                                .icon(BitmapDescriptorFactory.fromResource(icon)));
                     }
                 } else {
                     Log.d("DATA", new Gson().toJson(res));
@@ -231,6 +351,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
 
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 20f));
+
+                    int i = 0;
+                    for (TPA tpa: tpaList) {
+                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                Double.parseDouble(tpa.getLongitude())), loc);
+
+                        if (distance <= MIN_DISTANCE && !tpa.isInput()) {
+                            Log.d("DATA", "Position: " + position);
+                            Log.d("DATA", "id: " + tpsId);
+
+                            input.setVisibility(View.VISIBLE);
+                            tpsId = tpa.getId();
+                            position = i;
+
+                            break;
+                        } else {
+                            input.setVisibility(View.GONE);
+                        }
+
+                        i++;
+                        Log.d("DATA", "Distance: " + distance);
+                    }
                 } else {
                     Toast.makeText(MapsActivity.this, "Lokasi tidak ada!", Toast.LENGTH_SHORT).show();
                 }
@@ -238,7 +380,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    private void proceedAfterPermission() {
+    public double calculationByDistance(LatLng StartP, LatLng EndP) {
+        int Radius = 6371;
+        double lat1 = StartP.latitude;
+        double lat2 = EndP.latitude;
+        double lon1 = StartP.longitude;
+        double lon2 = EndP.longitude;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2)
+                * Math.sin(dLon / 2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        double valueResult = Radius * c;
+        double km = valueResult / 1;
+        DecimalFormat newFormat = new DecimalFormat("####");
+        int kmInDec = Integer.parseInt(newFormat.format(km));
+        double meter = valueResult % 1000;
+        int meterInDec = Integer.parseInt(newFormat.format(meter));
+        Log.i("Radius Value", "" + valueResult + "   KM  " + kmInDec
+                + " Meter   " + meterInDec);
 
+        return Radius * c;
     }
+
+
 }

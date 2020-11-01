@@ -1,5 +1,6 @@
 package com.meivaldi.trackerapps.api;
 
+import com.meivaldi.trackerapps.model.ApiResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
 
 import retrofit2.Call;
@@ -13,4 +14,7 @@ public interface ApiInterface {
     @POST("get_markers.php")
     Call<MarkerResponse> getAllMarker(@Field("uid") String uid);
 
+    @FormUrlEncoded
+    @POST("input_garbage.php")
+    Call<ApiResponse> inputGarbage(@Field("tps_id") int tpsId, @Field("jumlah") String jumlah);
 }

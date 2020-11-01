@@ -4,6 +4,9 @@ import com.google.gson.annotations.SerializedName;
 
 public class TPA {
 
+    @SerializedName("id")
+    private int id;
+
     @SerializedName("nama")
     private String nama;
 
@@ -13,10 +16,23 @@ public class TPA {
     @SerializedName("lon")
     private String longitude;
 
-    public TPA(String nama, String latitude, String longitude) {
+    @SerializedName("input")
+    private boolean input;
+
+    public TPA(int id, String nama, String latitude, String longitude, boolean input) {
+        this.id = id;
         this.nama = nama;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.input = input;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getNama() {
@@ -41,5 +57,13 @@ public class TPA {
 
     public void setLongitude(String longitude) {
         this.longitude = longitude;
+    }
+
+    public boolean isInput() {
+        return input;
+    }
+
+    public void setInput(boolean input) {
+        this.input = input;
     }
 }
