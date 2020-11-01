@@ -65,7 +65,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final int PERMISSION_CALLBACK_CONSTANT = 100;
     private static final double MIN_DISTANCE = 0.05;
-    private Marker marker, currentMarker;
+    private Marker marker;
+    private List<Marker> markers = new ArrayList<>();
     private Button input, inputBtn;
     private Dialog inputDialog;
     private EditText jumlahET;
@@ -108,7 +109,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         ApiResponse res = response.body();
 
                         if (!res.isStatus()) {
-                            currentMarker.remove();
+                            markers.get(position).remove();
 
                             TPA tpa = tpaList.get(position);
                             LatLng loc = new LatLng(Double.parseDouble(tpa.getLatitude()),
@@ -289,6 +290,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Log.d("DATA", new Gson().toJson(res));
                     tpaList.addAll(res.getTpaList());
 
+                    int i=0;
                     for (TPA tpa: tpaList) {
                         Log.d("DATA", tpa.getLatitude() + " " + tpa.getLongitude());
                         int icon;
@@ -302,18 +304,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         LatLng pick = new LatLng(Float.parseFloat(tpa.getLatitude()), Float.parseFloat(tpa.getLongitude()));
                         double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
                                 Double.parseDouble(tpa.getLongitude())), pick);
+
                         if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                            currentMarker = mMap.addMarker(new MarkerOptions()
-                                    .position(pick)
-                                    .title(tpa.getNama())
-                                    .icon(BitmapDescriptorFactory.fromResource(icon)));
+                            Log.d("DATA", "Position: " + position);
+                            Log.d("DATA", "id: " + tpsId);
+
+                            input.setVisibility(View.VISIBLE);
+                            tpsId = tpa.getId();
+                            position = i;
                         } else {
-                            mMap.addMarker(new MarkerOptions()
+                            input.setVisibility(View.GONE);
+                        }
+
+                        Marker marker = mMap.addMarker(new MarkerOptions()
                                     .position(pick)
                                     .title(tpa.getNama())
                                     .icon(BitmapDescriptorFactory.fromResource(icon)));
-                        }
+
+                        markers.add(marker);
                     }
+
+                    i++;
                 } else {
                     Log.d("DATA", new Gson().toJson(res));
                     Toast.makeText(MapsActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
