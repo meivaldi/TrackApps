@@ -108,15 +108,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         ApiResponse res = response.body();
 
                         if (!res.isStatus()) {
-                            if (currentMarker != null) currentMarker.remove();
+                            currentMarker.remove();
 
-                            TPA currentTPA = tpaList.get(position);
-                            LatLng current = new LatLng(Double.parseDouble(currentTPA.getLatitude()),
-                                    Double.parseDouble(currentTPA.getLongitude()));
+                            TPA tpa = tpaList.get(position);
+                            LatLng loc = new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                    Double.parseDouble(tpa.getLongitude()));
 
-                            currentMarker = mMap.addMarker(new MarkerOptions()
-                                    .position(current)
-                                    .title(currentTPA.getNama())
+                            mMap.addMarker(new MarkerOptions()
+                                    .position(loc)
+                                    .title(tpa.getNama())
                                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.bin)));
 
                             input.setVisibility(View.GONE);
@@ -193,7 +193,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 .title("Starter Point")
                                 .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
 
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 20f));
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
 
                         int i = 0;
                         for (TPA tpa: tpaList) {
@@ -208,13 +208,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 tpsId = tpa.getId();
                                 position = i;
 
-                                LatLng current = new LatLng(Double.parseDouble(tpa.getLatitude()),
-                                        Double.parseDouble(tpa.getLongitude()));
-
-                                currentMarker = mMap.addMarker(new MarkerOptions()
-                                        .position(current)
-                                        .title(tpa.getNama())
-                                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.bin)));
                                 break;
                             } else {
                                 input.setVisibility(View.GONE);
@@ -255,7 +248,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     .title("Starter Point")
                                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
 
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 20f));
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
 
                             int i = 0;
                             for (TPA tpa: tpaList) {
@@ -286,7 +279,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        Call<MarkerResponse> call = apiService.getAllMarker("1");
+        Call<MarkerResponse> call = apiService.getAllMarker("2");
         call.enqueue(new Callback<MarkerResponse>() {
             @Override
             public void onResponse(Call<MarkerResponse> call, Response<MarkerResponse> response) {
@@ -307,10 +300,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         }
 
                         LatLng pick = new LatLng(Float.parseFloat(tpa.getLatitude()), Float.parseFloat(tpa.getLongitude()));
-                        mMap.addMarker(new MarkerOptions()
-                                .position(pick)
-                                .title(tpa.getNama())
-                                .icon(BitmapDescriptorFactory.fromResource(icon)));
+                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                Double.parseDouble(tpa.getLongitude())), pick);
+                        if (distance <= MIN_DISTANCE && !tpa.isInput()) {
+                            currentMarker = mMap.addMarker(new MarkerOptions()
+                                    .position(pick)
+                                    .title(tpa.getNama())
+                                    .icon(BitmapDescriptorFactory.fromResource(icon)));
+                        } else {
+                            mMap.addMarker(new MarkerOptions()
+                                    .position(pick)
+                                    .title(tpa.getNama())
+                                    .icon(BitmapDescriptorFactory.fromResource(icon)));
+                        }
                     }
                 } else {
                     Log.d("DATA", new Gson().toJson(res));
@@ -350,7 +352,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             .title("Starter Point")
                             .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
 
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 20f));
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
 
                     int i = 0;
                     for (TPA tpa: tpaList) {
