@@ -16,5 +16,5 @@ public interface ApiInterface {
 
     @FormUrlEncoded
     @POST("input_garbage.php")
-    Call<ApiResponse> inputGarbage(@Field("tps_id") int tpsId, @Field("jumlah") String jumlah);
+    Call<ApiResponse> inputGarbage(@Field("tps_id") int tpsId);
 }
