@@ -8,6 +8,7 @@ import android.Manifest;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -16,7 +17,6 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -32,7 +32,6 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
@@ -71,7 +70,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Button input, inputBtn;
     private Dialog inputDialog;
     private ApiInterface apiService;
-    private LatLng currentLoc;
     private int tpsId = 0, position = 0;
 
     @Override
@@ -175,7 +173,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setInterval(10000);
-        locationRequest.setFastestInterval(100000);
+        locationRequest.setFastestInterval(5000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         LocationCallback mLocationCallback = new LocationCallback() {
             @Override
@@ -188,7 +186,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if (location != null) {
                         Log.d("DATA", location.getLatitude() + " " + location.getLongitude());
                         LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                        currentLoc = loc;
                         if (marker != null) marker.remove();
                         marker = mMap.addMarker(new MarkerOptions()
                                 .position(loc)
@@ -281,93 +278,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        FloatingActionButton up = findViewById(R.id.up);
-        FloatingActionButton down = findViewById(R.id.down);
-        FloatingActionButton left = findViewById(R.id.left);
-        FloatingActionButton right = findViewById(R.id.right);
+        SharedPreferences preferences = getSharedPreferences("akun", MODE_PRIVATE);
+        String ve_id = preferences.getString("ve_id", "");
 
-        up.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                goingUp();
-            }
-        });
-
-        down.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                goingDown();
-            }
-        });
-
-        left.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                goingLeft();
-            }
-        });
-
-        right.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                goingRight();
-            }
-        });
-    }
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        mMap.setTrafficEnabled(false);
-        mMap.setIndoorEnabled(false);
-        mMap.setBuildingsEnabled(true);
-
-        if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-
-        fusedLocationClient.getLastLocation().addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
-            @Override
-            public void onSuccess(Location location) {
-                if (location != null) {
-                    LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                    marker = mMap.addMarker(new MarkerOptions()
-                            .position(loc)
-                            .title("Starter Point")
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
-
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
-
-                    int i = 0;
-                    for (TPA tpa: tpaList) {
-                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                                Double.parseDouble(tpa.getLongitude())), loc);
-
-                        if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                            Log.d("DATA", "Position: " + position);
-                            Log.d("DATA", "id: " + tpsId);
-
-                            input.setVisibility(View.VISIBLE);
-                            tpsId = tpa.getId();
-                            position = i;
-
-                            break;
-                        } else {
-                            input.setVisibility(View.GONE);
-                        }
-
-                        i++;
-                        Log.d("DATA", "Distance: " + distance);
-                    }
-                } else {
-                    Toast.makeText(MapsActivity.this, "Lokasi tidak ada!", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        apiService = ApiClient.getClient().create(ApiInterface.class);
-        Call<MarkerResponse> call = apiService.getAllMarker("1");
+        Call<MarkerResponse> call = apiService.getAllMarker(ve_id);
         call.enqueue(new Callback<MarkerResponse>() {
             @Override
             public void onResponse(Call<MarkerResponse> call, Response<MarkerResponse> response) {
@@ -431,6 +345,59 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 pDialog.dismiss();
             }
         });
+
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+        mMap.setTrafficEnabled(false);
+        mMap.setIndoorEnabled(false);
+        mMap.setBuildingsEnabled(true);
+
+        if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        fusedLocationClient.getLastLocation().addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                if (location != null) {
+                    LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
+                    marker = mMap.addMarker(new MarkerOptions()
+                            .position(loc)
+                            .title("Starter Point")
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
+
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
+
+                    int i = 0;
+                    for (TPA tpa: tpaList) {
+                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                Double.parseDouble(tpa.getLongitude())), loc);
+
+                        if (distance <= MIN_DISTANCE && !tpa.isInput()) {
+                            Log.d("DATA", "Position: " + position);
+                            Log.d("DATA", "id: " + tpsId);
+
+                            input.setVisibility(View.VISIBLE);
+                            tpsId = tpa.getId();
+                            position = i;
+
+                            break;
+                        } else {
+                            input.setVisibility(View.GONE);
+                        }
+
+                        i++;
+                        Log.d("DATA", "Distance: " + distance);
+                    }
+                } else {
+                    Toast.makeText(MapsActivity.this, "Lokasi tidak ada!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     public double calculationByDistance(LatLng StartP, LatLng EndP) {
@@ -456,154 +423,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 + " Meter   " + meterInDec);
 
         return Radius * c;
-    }
-
-    private void goingRight() {
-        int Radius = 6371;
-
-        Double new_longitude = currentLoc.longitude + (0.01 / Radius) * (180 / Math.PI) / Math.cos(currentLoc.latitude * (Math.PI/180));
-        LatLng newPosition = new LatLng(currentLoc.latitude, new_longitude);
-        currentLoc = newPosition;
-
-        if (marker != null) marker.remove();
-        marker = mMap.addMarker(new MarkerOptions()
-                .position(newPosition)
-                .title("Starter Point")
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
-
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
-
-        int i=0;
-        for (TPA tpa: tpaList) {
-            double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                    Double.parseDouble(tpa.getLongitude())), marker.getPosition());
-
-            if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                Log.d("DATA", "Position: " + position);
-                Log.d("DATA", "id: " + tpsId);
-
-                input.setVisibility(View.VISIBLE);
-                tpsId = tpa.getId();
-                position = i;
-
-                break;
-            } else {
-                input.setVisibility(View.GONE);
-            }
-
-            i++;
-        }
-    }
-
-    private void goingLeft() {
-        int Radius = 6371;
-
-        Double new_longitude = currentLoc.longitude - (0.01 / Radius) * (180 / Math.PI) / Math.cos(currentLoc.latitude * (Math.PI/180));
-        LatLng newPosition = new LatLng(currentLoc.latitude, new_longitude);
-        currentLoc = newPosition;
-
-        if (marker != null) marker.remove();
-        marker = mMap.addMarker(new MarkerOptions()
-                .position(newPosition)
-                .title("Starter Point")
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
-
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
-
-        int i=0;
-        for (TPA tpa: tpaList) {
-            double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                    Double.parseDouble(tpa.getLongitude())), marker.getPosition());
-
-            if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                Log.d("DATA", "Position: " + position);
-                Log.d("DATA", "id: " + tpsId);
-
-                input.setVisibility(View.VISIBLE);
-                tpsId = tpa.getId();
-                position = i;
-
-                break;
-            } else {
-                input.setVisibility(View.GONE);
-            }
-
-            i++;
-        }
-    }
-
-    private void goingUp() {
-        int Radius = 6371;
-
-        Double new_latitude  = currentLoc.latitude  + (0.01 / Radius) * (180 / Math.PI);
-        LatLng newPosition = new LatLng(new_latitude, currentLoc.longitude);
-        currentLoc = newPosition;
-
-        if (marker != null) marker.remove();
-        marker = mMap.addMarker(new MarkerOptions()
-                .position(newPosition)
-                .title("Starter Point")
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
-
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
-
-        int i=0;
-        for (TPA tpa: tpaList) {
-            double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                    Double.parseDouble(tpa.getLongitude())), marker.getPosition());
-
-            if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                Log.d("DATA", "Position: " + position);
-                Log.d("DATA", "id: " + tpsId);
-
-                input.setVisibility(View.VISIBLE);
-                tpsId = tpa.getId();
-                position = i;
-
-                break;
-            } else {
-                input.setVisibility(View.GONE);
-            }
-
-            i++;
-        }
-    }
-
-    private void goingDown() {
-        int Radius = 6371;
-
-        Double new_latitude  = currentLoc.latitude  - (0.01 / Radius) * (180 / Math.PI);
-        LatLng newPosition = new LatLng(new_latitude, currentLoc.longitude);
-        currentLoc = newPosition;
-
-        if (marker != null) marker.remove();
-        marker = mMap.addMarker(new MarkerOptions()
-                .position(newPosition)
-                .title("Starter Point")
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
-
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
-
-        int i=0;
-        for (TPA tpa: tpaList) {
-            double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                    Double.parseDouble(tpa.getLongitude())), marker.getPosition());
-
-            if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                Log.d("DATA", "Position: " + position);
-                Log.d("DATA", "id: " + tpsId);
-
-                input.setVisibility(View.VISIBLE);
-                tpsId = tpa.getId();
-                position = i;
-
-                break;
-            } else {
-                input.setVisibility(View.GONE);
-            }
-
-            i++;
-        }
     }
 
 }
