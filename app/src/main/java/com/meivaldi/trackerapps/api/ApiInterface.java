@@ -21,4 +21,8 @@ public interface ApiInterface {
     @FormUrlEncoded
     @POST("login.php")
     Call<UserResponse> login(@Field("username") String username, @Field("password") String password);
+
+    @FormUrlEncoded
+    @POST("track_record.php")
+    Call<ApiResponse> track(@Field("ve_id") String ve_id, @Field("lat") String latitude, @Field("lon") String longitude);
 }

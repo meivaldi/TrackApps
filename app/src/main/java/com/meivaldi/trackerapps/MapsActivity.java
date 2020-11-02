@@ -70,7 +70,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Button input, inputBtn;
     private Dialog inputDialog;
     private ApiInterface apiService;
+
     private int tpsId = 0, position = 0;
+    private String ve_id = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -171,9 +173,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
 
+        SharedPreferences preferences = getSharedPreferences("akun", MODE_PRIVATE);
+        ve_id = preferences.getString("ve_id", "");
+
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setInterval(10000);
-        locationRequest.setFastestInterval(5000);
+        locationRequest.setFastestInterval(10000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         LocationCallback mLocationCallback = new LocationCallback() {
             @Override
@@ -186,6 +191,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if (location != null) {
                         Log.d("DATA", location.getLatitude() + " " + location.getLongitude());
                         LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
+
+                        Call<ApiResponse> call = apiService.track(ve_id, String.valueOf(loc.latitude), String.valueOf(loc.longitude));
+                        call.enqueue(new Callback<ApiResponse>() {
+                            @Override
+                            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                                Log.d("DATA", response.body().getMessage());
+                            }
+
+                            @Override
+                            public void onFailure(Call<ApiResponse> call, Throwable t) {
+                                Log.e("DATA", "ERROR: " + t.getMessage());
+                            }
+                        });
+
                         if (marker != null) marker.remove();
                         marker = mMap.addMarker(new MarkerOptions()
                                 .position(loc)
@@ -278,9 +297,58 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        SharedPreferences preferences = getSharedPreferences("akun", MODE_PRIVATE);
-        String ve_id = preferences.getString("ve_id", "");
+    }
 
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+        mMap.setTrafficEnabled(false);
+        mMap.setIndoorEnabled(false);
+        mMap.setBuildingsEnabled(true);
+
+        if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        fusedLocationClient.getLastLocation().addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                if (location != null) {
+                    LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
+                    marker = mMap.addMarker(new MarkerOptions()
+                            .position(loc)
+                            .title("Starter Point")
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
+
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
+
+                    int i = 0;
+                    for (TPA tpa: tpaList) {
+                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                Double.parseDouble(tpa.getLongitude())), loc);
+
+                        if (distance <= MIN_DISTANCE && !tpa.isInput()) {
+                            Log.d("DATA", "Position: " + position);
+                            Log.d("DATA", "id: " + tpsId);
+
+                            input.setVisibility(View.VISIBLE);
+                            tpsId = tpa.getId();
+                            position = i;
+
+                            break;
+                        } else {
+                            input.setVisibility(View.GONE);
+                        }
+
+                        i++;
+                        Log.d("DATA", "Distance: " + distance);
+                    }
+                } else {
+                    Toast.makeText(MapsActivity.this, "Lokasi tidak ada!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
         Call<MarkerResponse> call = apiService.getAllMarker(ve_id);
         call.enqueue(new Callback<MarkerResponse>() {
             @Override
@@ -346,58 +414,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-    }
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        mMap.setTrafficEnabled(false);
-        mMap.setIndoorEnabled(false);
-        mMap.setBuildingsEnabled(true);
-
-        if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-
-        fusedLocationClient.getLastLocation().addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
-            @Override
-            public void onSuccess(Location location) {
-                if (location != null) {
-                    LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                    marker = mMap.addMarker(new MarkerOptions()
-                            .position(loc)
-                            .title("Starter Point")
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
-
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
-
-                    int i = 0;
-                    for (TPA tpa: tpaList) {
-                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                                Double.parseDouble(tpa.getLongitude())), loc);
-
-                        if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                            Log.d("DATA", "Position: " + position);
-                            Log.d("DATA", "id: " + tpsId);
-
-                            input.setVisibility(View.VISIBLE);
-                            tpsId = tpa.getId();
-                            position = i;
-
-                            break;
-                        } else {
-                            input.setVisibility(View.GONE);
-                        }
-
-                        i++;
-                        Log.d("DATA", "Distance: " + distance);
-                    }
-                } else {
-                    Toast.makeText(MapsActivity.this, "Lokasi tidak ada!", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
     }
 
     public double calculationByDistance(LatLng StartP, LatLng EndP) {
