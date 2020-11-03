@@ -267,6 +267,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
 
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
+                            //MarkerAnimation.animateMarkerToGB(marker, loc, new LatLngInterpolator.Spherical());
 
                             int i = 0;
                             for (TPA tpa: tpaList) {
@@ -296,7 +297,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 });
             }
         });
-
     }
 
     @Override
