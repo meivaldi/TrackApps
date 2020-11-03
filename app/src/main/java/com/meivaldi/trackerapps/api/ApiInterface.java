@@ -25,4 +25,8 @@ public interface ApiInterface {
     @FormUrlEncoded
     @POST("track_record.php")
     Call<ApiResponse> track(@Field("ve_id") String ve_id, @Field("lat") String latitude, @Field("lon") String longitude);
+
+    @FormUrlEncoded
+    @POST("input_tpa.php")
+    Call<ApiResponse> inputTpa(@Field("ve_id") String ve_id, @Field("jumlah") String jumlah);
 }

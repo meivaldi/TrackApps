@@ -1,22 +1,26 @@
 package com.meivaldi.trackerapps;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -49,7 +53,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private FusedLocationProviderClient fusedLocationClient;
@@ -67,9 +71,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private Marker marker;
     private List<Marker> markers = new ArrayList<>();
-    private Button input, inputBtn;
-    private Dialog inputDialog;
+    private Button input;
+    private Dialog inputDialog, cheklistDialog;
     private ApiInterface apiService;
+    private Button inputTPA;
+    private EditText jumlahET;
+    private LocationCallback mLocationCallback;
 
     private int tpsId = 0, position = 0;
     private String ve_id = "";
@@ -77,10 +84,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_maps);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        getSupportActionBar().setTitle("Strada");
+
+        toolbar.setSubtitleTextColor(getResources().getColor(android.R.color.white));
+        toolbar.setTitleTextColor(getResources().getColor(android.R.color.white));
+
+        SharedPreferences preferences = getSharedPreferences("akun", MODE_PRIVATE);
+        ve_id = preferences.getString("ve_id", "");
 
         apiService = ApiClient.getClient().create(ApiInterface.class);
         input = findViewById(R.id.input);
@@ -90,11 +105,46 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         pDialog.setCancelable(false);
         pDialog.show();
 
+        cheklistDialog = new Dialog(MapsActivity.this);
+        cheklistDialog.setCancelable(false);
+        cheklistDialog.setContentView(R.layout.checklist_dialog);
+        cheklistDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        Button inputBtn = cheklistDialog.findViewById(R.id.inputBtn);
+
         inputDialog = new Dialog(MapsActivity.this);
         inputDialog.setCancelable(false);
         inputDialog.setContentView(R.layout.input_dialog);
         inputDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        inputBtn = inputDialog.findViewById(R.id.inputBtn);
+        inputTPA = inputDialog.findViewById(R.id.inputTPA);
+        jumlahET = inputDialog.findViewById(R.id.jumlahET);
+        inputTPA.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String jumlah = jumlahET.getText().toString();
+
+                if (jumlah.isEmpty()) {
+                    Toast.makeText(MapsActivity.this, "Harap masukkan jumlah!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Call<ApiResponse> call = apiService.inputTpa(ve_id, jumlah);
+                    call.enqueue(new Callback<ApiResponse>() {
+                        @Override
+                        public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                            ApiResponse res = response.body();
+                            Toast.makeText(MapsActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
+                            inputDialog.dismiss();
+                        }
+
+                        @Override
+                        public void onFailure(Call<ApiResponse> call, Throwable t) {
+                            Toast.makeText(MapsActivity.this, "Koneksi Error!", Toast.LENGTH_SHORT).show();
+                            inputDialog.dismiss();
+                        }
+                    });
+                }
+
+                inputDialog.dismiss();
+            }
+        });
 
         inputBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -126,7 +176,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         Toast.makeText(MapsActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
                         pDialog.dismiss();
-                        inputDialog.dismiss();
+                        cheklistDialog.dismiss();
                     }
 
                     @Override
@@ -141,7 +191,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         input.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                inputDialog.show();
+                cheklistDialog.show();
             }
         });
 
@@ -173,14 +223,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
 
-        SharedPreferences preferences = getSharedPreferences("akun", MODE_PRIVATE);
-        ve_id = preferences.getString("ve_id", "");
-
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setInterval(10000);
         locationRequest.setFastestInterval(10000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        LocationCallback mLocationCallback = new LocationCallback() {
+        mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult == null) {
@@ -414,6 +461,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.input_tpa) {
+            inputDialog.show();
+        } else if (id == R.id.logout) {
+            SharedPreferences pref = getSharedPreferences("akun", MODE_PRIVATE);
+            SharedPreferences.Editor editor = pref.edit();
+
+            editor.putBoolean("isLogin", false);
+            editor.putString("ve_id", "");
+            editor.putString("name", "");
+
+            editor.apply();
+
+            fusedLocationClient.removeLocationUpdates(mLocationCallback);
+            startActivity(new Intent(getApplicationContext(), LoginActivity.class));
+            finish();
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     public double calculationByDistance(LatLng StartP, LatLng EndP) {
