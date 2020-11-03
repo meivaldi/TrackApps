@@ -132,6 +132,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             ApiResponse res = response.body();
                             Toast.makeText(MapsActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
                             inputDialog.dismiss();
+
+                            logout();
                         }
 
                         @Override
@@ -477,21 +479,25 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (id == R.id.input_tpa) {
             inputDialog.show();
         } else if (id == R.id.logout) {
-            SharedPreferences pref = getSharedPreferences("akun", MODE_PRIVATE);
-            SharedPreferences.Editor editor = pref.edit();
-
-            editor.putBoolean("isLogin", false);
-            editor.putString("ve_id", "");
-            editor.putString("name", "");
-
-            editor.apply();
-
-            fusedLocationClient.removeLocationUpdates(mLocationCallback);
-            startActivity(new Intent(getApplicationContext(), LoginActivity.class));
-            finish();
+            logout();
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void logout() {
+        SharedPreferences pref = getSharedPreferences("akun", MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+
+        editor.putBoolean("isLogin", false);
+        editor.putString("ve_id", "");
+        editor.putString("name", "");
+
+        editor.apply();
+
+        fusedLocationClient.removeLocationUpdates(mLocationCallback);
+        startActivity(new Intent(getApplicationContext(), LoginActivity.class));
+        finish();
     }
 
     public double calculationByDistance(LatLng StartP, LatLng EndP) {
