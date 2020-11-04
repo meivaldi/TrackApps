@@ -398,6 +398,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         });
+
         Call<MarkerResponse> call = apiService.getAllMarker(ve_id);
         call.enqueue(new Callback<MarkerResponse>() {
             @Override
@@ -492,6 +493,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         editor.putBoolean("isLogin", false);
         editor.putString("ve_id", "");
         editor.putString("name", "");
+        editor.putString("tipe", "");
 
         editor.apply();
 

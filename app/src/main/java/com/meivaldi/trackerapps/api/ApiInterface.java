@@ -3,6 +3,7 @@ package com.meivaldi.trackerapps.api;
 import com.meivaldi.trackerapps.model.ApiResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
 import com.meivaldi.trackerapps.model.UserResponse;
+import com.meivaldi.trackerapps.model.VehicleResponse;
 
 import retrofit2.Call;
 import retrofit2.http.Field;
@@ -29,4 +30,7 @@ public interface ApiInterface {
     @FormUrlEncoded
     @POST("input_tpa.php")
     Call<ApiResponse> inputTpa(@Field("ve_id") String ve_id, @Field("jumlah") String jumlah);
+
+    @POST("get_all_vehicle.php")
+    Call<VehicleResponse> getAllVehicle();
 }

@@ -15,11 +15,15 @@ public class UserResponse {
     @SerializedName("ve_id")
     private String vehicleId;
 
-    public UserResponse(boolean status, String message, String name, String vehicleId) {
+    @SerializedName("tipe")
+    private String tipe;
+
+    public UserResponse(boolean status, String message, String name, String vehicleId, String tipe) {
         this.status = status;
         this.message = message;
         this.name = name;
         this.vehicleId = vehicleId;
+        this.tipe = tipe;
     }
 
     public boolean isStatus() {
@@ -52,5 +56,13 @@ public class UserResponse {
 
     public void setVehicleId(String vehicleId) {
         this.vehicleId = vehicleId;
+    }
+
+    public String getTipe() {
+        return tipe;
+    }
+
+    public void setTipe(String tipe) {
+        this.tipe = tipe;
     }
 }

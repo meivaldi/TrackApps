@@ -45,9 +45,14 @@ public class LoginActivity extends AppCompatActivity {
 
         SharedPreferences preferences = getSharedPreferences("akun", MODE_PRIVATE);
         boolean isLogin = preferences.getBoolean("isLogin", false);
+        String tipe = preferences.getString("tipe", "");
 
         if (isLogin) {
-            startActivity(new Intent(getApplicationContext(), MapsActivity.class));
+            if (tipe.equals("0")) {
+                startActivity(new Intent(getApplicationContext(), AdminActivity.class));
+            } else {
+                startActivity(new Intent(getApplicationContext(), MapsActivity.class));
+            }
         }
 
         login.setOnClickListener(new View.OnClickListener() {
@@ -72,13 +77,19 @@ public class LoginActivity extends AppCompatActivity {
                             if (!res.isStatus()) {
                                 SharedPreferences pref = getSharedPreferences("akun", MODE_PRIVATE);
                                 SharedPreferences.Editor editor = pref.edit();
+                                String tipe = res.getTipe();
 
                                 editor.putBoolean("isLogin", true);
                                 editor.putString("ve_id", res.getVehicleId());
                                 editor.putString("name", res.getName());
+                                editor.putString("tipe", tipe);
 
                                 editor.apply();
-                                startActivity(new Intent(getApplicationContext(), MapsActivity.class));
+                                if (tipe.equals("0")) {
+                                    startActivity(new Intent(getApplicationContext(), AdminActivity.class));
+                                } else {
+                                    startActivity(new Intent(getApplicationContext(), MapsActivity.class));
+                                }
                             } else {
                                 usernameET.setText("");
                                 passwordET.setText("");
