@@ -1,14 +1,25 @@
 package com.meivaldi.trackerapps;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
 
+import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import com.google.android.gms.location.LocationAvailability;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -17,32 +28,23 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.meivaldi.trackerapps.api.ApiClient;
 import com.meivaldi.trackerapps.api.ApiInterface;
-import com.meivaldi.trackerapps.api.FetchUrl;
-import com.meivaldi.trackerapps.api.TaskLoadedCallback;
 import com.meivaldi.trackerapps.model.Coordinate;
+import com.meivaldi.trackerapps.model.CoordinateResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
 import com.meivaldi.trackerapps.model.TPA;
-import com.meivaldi.trackerapps.model.TrackResponse;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import cz.msebera.android.httpclient.Header;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyCallback, TaskLoadedCallback {
+public class DetailTrackActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private ProgressDialog pDialog;
@@ -51,16 +53,22 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
     private List<Marker> markers = new ArrayList<>();
     private List<Coordinate> tracks = new ArrayList<>();
     private LatLng loc;
-    private Polyline currentPolyline;
+    private Marker marker;
+
+    private static final int PERMISSION_CALLBACK_CONSTANT = 100;
+    private String[] permissionsRequired = new String[]{
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_detail_maps);
+        setContentView(R.layout.activity_detail_track);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("Histori Perjalanan");
+        getSupportActionBar().setTitle("Tracking Kendaraan");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         toolbar.setSubtitleTextColor(getResources().getColor(android.R.color.white));
@@ -72,14 +80,75 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
             }
         });
 
+        if (ActivityCompat.checkSelfPermission(DetailTrackActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(DetailTrackActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(DetailTrackActivity.this, permissionsRequired[0])
+                    && ActivityCompat.shouldShowRequestPermissionRationale(DetailTrackActivity.this, permissionsRequired[1])) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(DetailTrackActivity.this);
+                builder.setTitle("Perizian Aplikasi");
+                builder.setMessage("Aplikasi ini membutuhkan lokasi Anda!");
+                builder.setPositiveButton("Grant", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                        ActivityCompat.requestPermissions(DetailTrackActivity.this,
+                                permissionsRequired,
+                                PERMISSION_CALLBACK_CONSTANT);
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+                builder.show();
+            } else {
+                ActivityCompat.requestPermissions(DetailTrackActivity.this, permissionsRequired, PERMISSION_CALLBACK_CONSTANT);
+            }
+        }
+
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        pDialog = new ProgressDialog(DetailMapsActivity.this);
+        pDialog = new ProgressDialog(DetailTrackActivity.this);
         pDialog.setMessage("Memuat...");
         pDialog.setCancelable(false);
         pDialog.show();
+
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(10000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationCallback callback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                String ve_id = getIntent().getStringExtra("ve_id");
+
+                apiService = ApiClient.getClient().create(ApiInterface.class);
+                Call<CoordinateResponse> call = apiService.trackVehicle(ve_id);
+
+                call.enqueue(new Callback<CoordinateResponse>() {
+                    @Override
+                    public void onResponse(Call<CoordinateResponse> call, Response<CoordinateResponse> response) {
+                        CoordinateResponse res = response.body();
+
+                        Log.d("TES", res.getLat() + ", " + res.getLon());
+                        if (marker == null) return;
+
+                            MarkerAnimation.animateMarkerToGB(marker, new LatLng(Double.parseDouble(res.getLat()),
+                                    Double.parseDouble(res.getLon())), new LatLngInterpolator.Spherical());
+                    }
+
+                    @Override
+                    public void onFailure(Call<CoordinateResponse> call, Throwable t) {
+
+                    }
+                });
+            }
+        };
+        LocationServices.getFusedLocationProviderClient(getApplicationContext()).requestLocationUpdates(locationRequest, callback, null);
     }
 
     @Override
@@ -115,7 +184,7 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
             icon = R.drawable.truck8;
         }
 
-        mMap.addMarker(new MarkerOptions()
+        marker = mMap.addMarker(new MarkerOptions()
                 .position(loc)
                 .title("Starter Point")
                 .icon(BitmapDescriptorFactory.fromResource(icon)));
@@ -129,7 +198,6 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
                 MarkerResponse res = response.body();
 
                 if (!res.isStatus()) {
-                    Log.d("DATA", new Gson().toJson(res));
                     tpaList.addAll(res.getTpaList());
 
                     for (TPA tpa: tpaList) {
@@ -152,7 +220,7 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
                     }
                 } else {
                     Log.d("DATA", new Gson().toJson(res));
-                    Toast.makeText(DetailMapsActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(DetailTrackActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
                 }
 
                 pDialog.dismiss();
@@ -160,58 +228,10 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
 
             @Override
             public void onFailure(Call<MarkerResponse> call, Throwable t) {
-                Toast.makeText(DetailMapsActivity.this, "Koneksi error!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(DetailTrackActivity.this, "Koneksi error!", Toast.LENGTH_SHORT).show();
                 Log.e("DATA", t.getMessage());
                 pDialog.dismiss();
             }
         });
-
-        Call<TrackResponse> call2 = apiService.getTracks(ve_id);
-        call2.enqueue(new Callback<TrackResponse>() {
-            @Override
-            public void onResponse(Call<TrackResponse> call, Response<TrackResponse> response) {
-                tracks = response.body().getTracks();
-
-                if (tracks.isEmpty()) {
-                    Toast.makeText(DetailMapsActivity.this, "Belum ada riwayat perjalanan hari ini!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                LatLng currentPath = loc;
-                LatLng pick;
-                for (Coordinate coordinate: tracks) {
-                    pick = new LatLng(coordinate.getLat(), coordinate.getLon());
-                    new FetchUrl(DetailMapsActivity.this).execute(getUrl(currentPath, pick, "driving"), "driving");
-                    currentPath = pick;
-                }
-            }
-
-            @Override
-            public void onFailure(Call<TrackResponse> call, Throwable t) {
-                Toast.makeText(DetailMapsActivity.this, "Koneksi error!", Toast.LENGTH_SHORT).show();
-                Log.e("DATA", t.getMessage());
-            }
-        });
-
-    }
-
-    private String getUrl(LatLng origin, LatLng dest, String directionMode) {
-        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
-        String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
-        String mode = "mode=" + directionMode;
-        String parameters = str_origin + "&" + str_dest + "&" + mode;
-        String output = "json";
-        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters + "&key=" + getString(R.string.api_key);
-
-        return url;
-    }
-
-    @Override
-    public void onTaskDone(Object... values) {
-        PolylineOptions rectLine = new PolylineOptions().width(4).color(getResources().getColor(R.color.colorPrimary));
-
-//        if (currentPolyline != null)
-//            currentPolyline.remove();
-        currentPolyline = mMap.addPolyline((PolylineOptions) values[0]);
     }
 }

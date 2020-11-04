@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.Gson;
 import com.meivaldi.trackerapps.AdminActivity;
 import com.meivaldi.trackerapps.DetailMapsActivity;
+import com.meivaldi.trackerapps.DetailTrackActivity;
 import com.meivaldi.trackerapps.R;
 import com.meivaldi.trackerapps.RecycleTouchListener;
 import com.meivaldi.trackerapps.VehicleAdapter;
@@ -61,10 +62,12 @@ public class TrackFragment extends Fragment {
             public void onClick(View view, int position) {
                 Vehicle vehicle = vehicleList.get(position);
 
-                Intent intent = new Intent(getContext(), DetailMapsActivity.class);
+                Intent intent = new Intent(getContext(), DetailTrackActivity.class);
                 intent.putExtra("lat", vehicle.getStartLatitude());
                 intent.putExtra("lon", vehicle.getStartLongitude());
                 intent.putExtra("icon", vehicle.getIcon());
+                intent.putExtra("ve_id", vehicle.getVeId());
+
                 getContext().startActivity(intent);
             }
 

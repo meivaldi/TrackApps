@@ -1,6 +1,7 @@
 package com.meivaldi.trackerapps.api;
 
 import com.meivaldi.trackerapps.model.ApiResponse;
+import com.meivaldi.trackerapps.model.CoordinateResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
 import com.meivaldi.trackerapps.model.TrackResponse;
 import com.meivaldi.trackerapps.model.UserResponse;
@@ -38,4 +39,8 @@ public interface ApiInterface {
     @FormUrlEncoded
     @POST("get_tracks.php")
     Call<TrackResponse> getTracks(@Field("ve_id") String ve_id);
+
+    @FormUrlEncoded
+    @POST("track_vehicle.php")
+    Call<CoordinateResponse> trackVehicle(@Field("ve_id") String ve_id);
 }
