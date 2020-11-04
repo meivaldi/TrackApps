@@ -44,6 +44,7 @@ import com.meivaldi.trackerapps.api.ApiInterface;
 import com.meivaldi.trackerapps.model.ApiResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
 import com.meivaldi.trackerapps.model.TPA;
+import com.meivaldi.trackerapps.service.LocationService;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -80,6 +81,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private int tpsId = 0, position = 0;
     private String ve_id = "";
+    private Intent mServiceIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -263,7 +265,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
 
                         int i = 0;
-                        for (TPA tpa: tpaList) {
+                        for (TPA tpa : tpaList) {
                             double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
                                     Double.parseDouble(tpa.getLongitude())), loc);
 
@@ -319,7 +321,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             //MarkerAnimation.animateMarkerToGB(marker, loc, new LatLngInterpolator.Spherical());
 
                             int i = 0;
-                            for (TPA tpa: tpaList) {
+                            for (TPA tpa : tpaList) {
                                 double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
                                         Double.parseDouble(tpa.getLongitude())), loc);
 
@@ -346,6 +348,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 });
             }
         });
+
+        mServiceIntent = new Intent(getApplicationContext(), LocationService.class);
+        startService(mServiceIntent);
     }
 
     @Override
@@ -373,7 +378,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
 
                     int i = 0;
-                    for (TPA tpa: tpaList) {
+                    for (TPA tpa : tpaList) {
                         double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
                                 Double.parseDouble(tpa.getLongitude())), loc);
 
@@ -409,7 +414,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Log.d("DATA", new Gson().toJson(res));
                     tpaList.addAll(res.getTpaList());
 
-                    for (TPA tpa: tpaList) {
+                    for (TPA tpa : tpaList) {
                         Log.d("DATA", tpa.getLatitude() + " " + tpa.getLongitude());
                         int icon;
 
@@ -428,8 +433,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         markers.add(pickMarker);
                     }
 
-                    int i=0;
-                    for (TPA tpa: tpaList) {
+                    int i = 0;
+                    for (TPA tpa : tpaList) {
                         double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
                                 Double.parseDouble(tpa.getLongitude())), marker.getPosition());
 
@@ -486,6 +491,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopService(mServiceIntent);
+    }
+
     private void logout() {
         SharedPreferences pref = getSharedPreferences("akun", MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
@@ -526,5 +537,4 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         return Radius * c;
     }
-
 }
