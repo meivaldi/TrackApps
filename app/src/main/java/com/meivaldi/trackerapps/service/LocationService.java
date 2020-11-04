@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.IBinder;
 import android.util.Log;
-import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
@@ -16,15 +15,10 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.meivaldi.trackerapps.R;
 import com.meivaldi.trackerapps.api.ApiClient;
 import com.meivaldi.trackerapps.api.ApiInterface;
 import com.meivaldi.trackerapps.model.ApiResponse;
-import com.meivaldi.trackerapps.model.TPA;
 import com.meivaldi.trackerapps.receiver.RestartBackgroundService;
 
 import retrofit2.Call;
