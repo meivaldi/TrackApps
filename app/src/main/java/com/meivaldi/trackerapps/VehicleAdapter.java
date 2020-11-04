@@ -41,6 +41,18 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.MyViewHo
             resource = R.drawable.truck_lg;
         } else if (vehicle.getIcon().equals("2")) {
             resource = R.drawable.truck2_lg;
+        } else if (vehicle.getIcon().equals("3")) {
+            resource = R.drawable.truck3_lg;
+        } else if (vehicle.getIcon().equals("4")) {
+            resource = R.drawable.truck4_lg;
+        } else if (vehicle.getIcon().equals("5")) {
+            resource = R.drawable.truck5_lg;
+        } else if (vehicle.getIcon().equals("6")) {
+            resource = R.drawable.truck6_lg;
+        } else if (vehicle.getIcon().equals("7")) {
+            resource = R.drawable.truck7_lg;
+        } else if (vehicle.getIcon().equals("8")) {
+            resource = R.drawable.truck8_lg;
         }
 
         holder.namaTV.setText(vehicle.getNama());

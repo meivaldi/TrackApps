@@ -25,7 +25,6 @@ public class FetchUrl extends AsyncTask<String, Void, String> {
         String data = "";
         directionMode = strings[1];
         try {
-            // Fetching the data from web service
             data = downloadUrl(strings[0]);
             Log.d("mylog", "Background task data " + data.toString());
         } catch (Exception e) {
@@ -47,11 +46,8 @@ public class FetchUrl extends AsyncTask<String, Void, String> {
         HttpURLConnection urlConnection = null;
         try {
             URL url = new URL(strUrl);
-            // Creating an http connection to communicate with url
             urlConnection = (HttpURLConnection) url.openConnection();
-            // Connecting to url
             urlConnection.connect();
-            // Reading data from url
             iStream = urlConnection.getInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
             StringBuffer sb = new StringBuffer();

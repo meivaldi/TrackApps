@@ -18,4 +18,5 @@
     <string name="menu_slideshow">Slideshow</string>
     <string name="menu_track">Lacak</string>
     <string name="menu_trace">Histori Perjalanan</string>
+    <string name="api_key">AIzaSyCVcZFTO-4QVQFKbvVsMUgbFrdjLUp1YR0</string>
 </resources>

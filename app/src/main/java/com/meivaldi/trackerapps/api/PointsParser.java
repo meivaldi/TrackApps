@@ -23,10 +23,8 @@ public class PointsParser extends AsyncTask<String, Integer, List<List<HashMap<S
         this.directionMode = directionMode;
     }
 
-    // Parsing the data in non-ui thread
     @Override
     protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
-
         JSONObject jObject;
         List<List<HashMap<String, String>>> routes = null;
 
@@ -48,7 +46,6 @@ public class PointsParser extends AsyncTask<String, Integer, List<List<HashMap<S
         return routes;
     }
 
-    // Executes in UI thread, after the parsing process
     @Override
     protected void onPostExecute(List<List<HashMap<String, String>>> result) {
         ArrayList<LatLng> points;
@@ -74,7 +71,7 @@ public class PointsParser extends AsyncTask<String, Integer, List<List<HashMap<S
                 lineOptions.color(Color.MAGENTA);
             } else {
                 lineOptions.width(20);
-                lineOptions.color(Color.BLUE);
+                lineOptions.color(Color.rgb(42, 125, 50));
             }
             Log.d("mylog", "onPostExecute lineoptions decoded");
         }
