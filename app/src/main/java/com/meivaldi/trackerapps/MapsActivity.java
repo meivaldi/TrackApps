@@ -350,6 +350,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
         mServiceIntent = new Intent(getApplicationContext(), LocationService.class);
+        mServiceIntent.putExtra("ve_id", ve_id);
         startService(mServiceIntent);
     }
 
@@ -492,9 +493,39 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+
+        Log.d("LOCATION", "PAUSE");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        Log.d("LOCATION", "RESTART");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        Log.d("LOCATION", "RESUME");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        Log.d("LOCATION", "STOP");
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         stopService(mServiceIntent);
+
+        Log.d("LOCATION", "DESTROY");
     }
 
     private void logout() {

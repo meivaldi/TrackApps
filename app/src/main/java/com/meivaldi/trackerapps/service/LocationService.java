@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
@@ -15,9 +16,31 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.meivaldi.trackerapps.R;
+import com.meivaldi.trackerapps.api.ApiClient;
+import com.meivaldi.trackerapps.api.ApiInterface;
+import com.meivaldi.trackerapps.model.ApiResponse;
+import com.meivaldi.trackerapps.model.TPA;
 import com.meivaldi.trackerapps.receiver.RestartBackgroundService;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class LocationService extends Service {
+
+    String veId = "";
+
+    @Override
+    public void onStart(Intent intent, int startId) {
+        super.onStart(intent, startId);
+        veId = intent.getStringExtra("ve_id");
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -51,7 +74,7 @@ public class LocationService extends Service {
     private void requestLocationUpdates() {
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setInterval(10000);
-        locationRequest.setFastestInterval(10000);
+        locationRequest.setFastestInterval(5000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         LocationCallback callback = new LocationCallback() {
             @Override
@@ -62,6 +85,24 @@ public class LocationService extends Service {
 
                 for (Location location : locationResult.getLocations()) {
                     Log.d("LOCATION", location.getLatitude() + ", " + location.getLongitude());
+                    if (location != null) {
+                        Log.d("DATA", location.getLatitude() + " " + location.getLongitude());
+                        LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
+
+                        ApiInterface apiService = ApiClient.getClient().create(ApiInterface.class);
+                        Call<ApiResponse> call = apiService.track(veId, String.valueOf(loc.latitude), String.valueOf(loc.longitude));
+                        call.enqueue(new Callback<ApiResponse>() {
+                            @Override
+                            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                                Log.d("DATA", response.body().getMessage());
+                            }
+
+                            @Override
+                            public void onFailure(Call<ApiResponse> call, Throwable t) {
+                                Log.e("DATA", "ERROR: " + t.getMessage());
+                            }
+                        });
+                    }
                 }
             }
         };
