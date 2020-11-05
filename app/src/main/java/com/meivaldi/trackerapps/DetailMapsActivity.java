@@ -59,12 +59,13 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
         setContentView(R.layout.activity_detail_maps);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setSubtitleTextColor(getResources().getColor(android.R.color.white));
+        toolbar.setTitleTextColor(getResources().getColor(android.R.color.white));
+
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Histori Perjalanan");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        toolbar.setSubtitleTextColor(getResources().getColor(android.R.color.white));
-        toolbar.setTitleTextColor(getResources().getColor(android.R.color.white));
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

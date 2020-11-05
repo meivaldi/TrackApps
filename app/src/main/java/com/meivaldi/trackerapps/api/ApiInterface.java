@@ -2,6 +2,7 @@ package com.meivaldi.trackerapps.api;
 
 import com.meivaldi.trackerapps.model.ApiResponse;
 import com.meivaldi.trackerapps.model.CoordinateResponse;
+import com.meivaldi.trackerapps.model.DashboardResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
 import com.meivaldi.trackerapps.model.TrackResponse;
 import com.meivaldi.trackerapps.model.UserResponse;
@@ -10,6 +11,7 @@ import com.meivaldi.trackerapps.model.VehicleResponse;
 import retrofit2.Call;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
 import retrofit2.http.POST;
 
 public interface ApiInterface {
@@ -43,4 +45,7 @@ public interface ApiInterface {
     @FormUrlEncoded
     @POST("track_vehicle.php")
     Call<CoordinateResponse> trackVehicle(@Field("ve_id") String ve_id);
+
+    @GET("dashboard.php")
+    Call<DashboardResponse> getDashboard();
 }

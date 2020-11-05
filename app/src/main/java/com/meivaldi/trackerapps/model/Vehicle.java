@@ -19,12 +19,16 @@ public class Vehicle {
     @SerializedName("lon")
     private String startLongitude;
 
-    public Vehicle(String veId, String nama, String icon, String startLatitude, String startLongitude) {
+    @SerializedName("total")
+    private String total;
+
+    public Vehicle(String veId, String nama, String icon, String startLatitude, String startLongitude, String total) {
         this.veId = veId;
         this.nama = nama;
         this.icon = icon;
         this.startLatitude = startLatitude;
         this.startLongitude = startLongitude;
+        this.total = total;
     }
 
     public String getVeId() {
@@ -65,5 +69,13 @@ public class Vehicle {
 
     public void setStartLongitude(String startLongitude) {
         this.startLongitude = startLongitude;
+    }
+
+    public String getTotal() {
+        return total;
+    }
+
+    public void setTotal(String total) {
+        this.total = total;
     }
 }

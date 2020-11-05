@@ -57,6 +57,8 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.MyViewHo
 
         holder.namaTV.setText(vehicle.getNama());
         holder.icon.setImageResource(resource);
+
+        if (vehicle.getTotal() != null) holder.jumlahTV.setText(vehicle.getTotal() + " Kg");
     }
 
     @Override
@@ -65,13 +67,14 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.MyViewHo
     }
 
     class MyViewHolder extends RecyclerView.ViewHolder {
-        TextView namaTV;
+        TextView namaTV, jumlahTV;
         ImageView icon;
 
         public MyViewHolder(@NonNull View itemView) {
             super(itemView);
             namaTV = itemView.findViewById(R.id.name);
             icon = itemView.findViewById(R.id.image);
+            jumlahTV = itemView.findViewById(R.id.jumlah);
         }
     }
 }
