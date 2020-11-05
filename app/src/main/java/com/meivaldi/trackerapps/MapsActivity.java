@@ -465,6 +465,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng newPosition = new LatLng(currentLoc.latitude, new_longitude);
         currentLoc = newPosition;
 
+        apiService = ApiClient.getClient().create(ApiInterface.class);
+        Call<ApiResponse> call = apiService.track("1", String.valueOf(newPosition.latitude), String.valueOf(newPosition.longitude));
+        call.enqueue(new Callback<ApiResponse>() {
+            @Override
+            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                Log.d("DATA", response.body().getMessage());
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse> call, Throwable t) {
+                Log.e("DATA", "ERROR: " + t.getMessage());
+            }
+        });
+
         if (marker != null) marker.remove();
         marker = mMap.addMarker(new MarkerOptions()
                 .position(newPosition)
@@ -553,6 +567,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng newPosition = new LatLng(new_latitude, currentLoc.longitude);
         currentLoc = newPosition;
 
+        apiService = ApiClient.getClient().create(ApiInterface.class);
+        Call<ApiResponse> call = apiService.track("1", String.valueOf(newPosition.latitude), String.valueOf(newPosition.longitude));
+        call.enqueue(new Callback<ApiResponse>() {
+            @Override
+            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                Log.d("DATA", response.body().getMessage());
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse> call, Throwable t) {
+                Log.e("DATA", "ERROR: " + t.getMessage());
+            }
+        });
+
         if (marker != null) marker.remove();
         marker = mMap.addMarker(new MarkerOptions()
                 .position(newPosition)
@@ -589,6 +617,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Double new_latitude  = currentLoc.latitude  - (0.01 / Radius) * (180 / Math.PI);
         LatLng newPosition = new LatLng(new_latitude, currentLoc.longitude);
         currentLoc = newPosition;
+
+        apiService = ApiClient.getClient().create(ApiInterface.class);
+        Call<ApiResponse> call = apiService.track("1", String.valueOf(newPosition.latitude), String.valueOf(newPosition.longitude));
+        call.enqueue(new Callback<ApiResponse>() {
+            @Override
+            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                Log.d("DATA", response.body().getMessage());
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse> call, Throwable t) {
+                Log.e("DATA", "ERROR: " + t.getMessage());
+            }
+        });
 
         if (marker != null) marker.remove();
         marker = mMap.addMarker(new MarkerOptions()

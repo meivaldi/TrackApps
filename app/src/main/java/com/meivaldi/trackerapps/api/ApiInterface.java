@@ -17,4 +17,8 @@ public interface ApiInterface {
     @FormUrlEncoded
     @POST("input_garbage.php")
     Call<ApiResponse> inputGarbage(@Field("tps_id") int tpsId);
+
+    @FormUrlEncoded
+    @POST("track_record.php")
+    Call<ApiResponse> track(@Field("ve_id") String ve_id, @Field("lat") String latitude, @Field("lon") String longitude);
 }
