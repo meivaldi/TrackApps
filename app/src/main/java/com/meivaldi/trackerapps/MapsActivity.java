@@ -539,7 +539,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         editor.apply();
 
-        fusedLocationClient.removeLocationUpdates(mLocationCallback);
+        //fusedLocationClient.removeLocationUpdates(mLocationCallback);
+        stopService(mServiceIntent);
         startActivity(new Intent(getApplicationContext(), LoginActivity.class));
         finish();
     }
