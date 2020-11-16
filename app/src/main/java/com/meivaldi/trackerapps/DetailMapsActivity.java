@@ -209,10 +209,6 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
 
     @Override
     public void onTaskDone(Object... values) {
-        PolylineOptions rectLine = new PolylineOptions().width(4).color(getResources().getColor(R.color.colorPrimary));
-
-//        if (currentPolyline != null)
-//            currentPolyline.remove();
         currentPolyline = mMap.addPolyline((PolylineOptions) values[0]);
     }
 }

@@ -28,9 +28,14 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 import com.meivaldi.trackerapps.api.ApiClient;
 import com.meivaldi.trackerapps.api.ApiInterface;
+import com.meivaldi.trackerapps.api.FetchUrl;
+import com.meivaldi.trackerapps.api.GetCoordinates;
+import com.meivaldi.trackerapps.api.TaskLoadedCallback;
 import com.meivaldi.trackerapps.model.Coordinate;
 import com.meivaldi.trackerapps.model.CoordinateResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
@@ -44,22 +49,25 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class DetailTrackActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class DetailTrackActivity extends AppCompatActivity implements OnMapReadyCallback, TaskLoadedCallback, Runnable {
 
     private GoogleMap mMap;
     private ProgressDialog pDialog;
     private ApiInterface apiService;
     private List<TPA> tpaList = new ArrayList<>();
     private List<Marker> markers = new ArrayList<>();
-    private List<Coordinate> tracks = new ArrayList<>();
+    private  List<LatLng> points = new ArrayList<>();
     private LatLng loc;
     private Marker marker;
+    private Handler handler;
 
     private static final int PERMISSION_CALLBACK_CONSTANT = 100;
     private String[] permissionsRequired = new String[]{
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
     };
+
+    int counter = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,8 +126,8 @@ public class DetailTrackActivity extends AppCompatActivity implements OnMapReady
         pDialog.show();
 
         LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(10000);
-        locationRequest.setFastestInterval(10000);
+        locationRequest.setInterval(60000);
+        locationRequest.setFastestInterval(60000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         LocationCallback callback = new LocationCallback() {
             @Override
@@ -137,8 +145,8 @@ public class DetailTrackActivity extends AppCompatActivity implements OnMapReady
                         Log.d("TES", res.getLat() + ", " + res.getLon());
                         if (marker == null) return;
 
-                            MarkerAnimation.animateMarkerToGB(marker, new LatLng(Double.parseDouble(res.getLat()),
-                                    Double.parseDouble(res.getLon())), new LatLngInterpolator.Spherical());
+                        new GetCoordinates(DetailTrackActivity.this).execute(getUrl(marker.getPosition(),new LatLng(Double.parseDouble(res.getLat()),
+                                Double.parseDouble(res.getLon())), "driving"), "driving");
                     }
 
                     @Override
@@ -158,39 +166,32 @@ public class DetailTrackActivity extends AppCompatActivity implements OnMapReady
         mMap.setIndoorEnabled(false);
         mMap.setBuildingsEnabled(true);
 
-        String latitude = getIntent().getStringExtra("lat");
-        String longitude = getIntent().getStringExtra("lon");
-        String iconRef = getIntent().getStringExtra("icon");
+        final String iconRef = getIntent().getStringExtra("icon");
         String ve_id = getIntent().getStringExtra("ve_id");
 
-        loc = new LatLng(Double.parseDouble(latitude), Double.parseDouble(longitude));
-        int icon = 0;
-
-        if (iconRef.equals("1")) {
-            icon = R.drawable.truck;
-        } else if (iconRef.equals("2")) {
-            icon = R.drawable.truck2;
-        } else if (iconRef.equals("3")) {
-            icon = R.drawable.truck3;
-        } else if (iconRef.equals("4")) {
-            icon = R.drawable.truck4;
-        } else if (iconRef.equals("5")) {
-            icon = R.drawable.truck5;
-        } else if (iconRef.equals("6")) {
-            icon = R.drawable.truck6;
-        } else if (iconRef.equals("7")) {
-            icon = R.drawable.truck7;
-        } else if (iconRef.equals("8")) {
-            icon = R.drawable.truck8;
-        }
-
-        marker = mMap.addMarker(new MarkerOptions()
-                .position(loc)
-                .title("Starter Point")
-                .icon(BitmapDescriptorFactory.fromResource(icon)));
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
-
         apiService = ApiClient.getClient().create(ApiInterface.class);
+        Call<CoordinateResponse> apiCall = apiService.trackVehicle(ve_id);
+
+        apiCall.enqueue(new Callback<CoordinateResponse>() {
+            @Override
+            public void onResponse(Call<CoordinateResponse> call, Response<CoordinateResponse> response) {
+                CoordinateResponse res = response.body();
+
+                loc = new LatLng(Double.parseDouble(res.getLat()), Double.parseDouble(res.getLon()));
+
+                marker = mMap.addMarker(new MarkerOptions()
+                        .position(loc)
+                        .title("Starter Point")
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.car)));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
+            }
+
+            @Override
+            public void onFailure(Call<CoordinateResponse> call, Throwable t) {
+
+            }
+        });
+
         Call<MarkerResponse> call = apiService.getAllMarker(ve_id);
         call.enqueue(new Callback<MarkerResponse>() {
             @Override
@@ -233,5 +234,40 @@ public class DetailTrackActivity extends AppCompatActivity implements OnMapReady
                 pDialog.dismiss();
             }
         });
+
+        handler = new Handler();
+    }
+
+    private String getUrl(LatLng origin, LatLng dest, String directionMode) {
+        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
+        String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
+        String mode = "mode=" + directionMode;
+        String parameters = str_origin + "&" + str_dest + "&" + mode;
+        String output = "json";
+        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters + "&key=" + getString(R.string.api_key);
+
+        return url;
+    }
+
+    @Override
+    public void onTaskDone(Object... values) {
+        ArrayList<LatLng> pointsFromServer = (ArrayList<LatLng>) values[0];
+        Log.d("POINT", ""+pointsFromServer.size());
+        Log.d("POINT", new Gson().toJson(pointsFromServer));
+
+        points.addAll(pointsFromServer);
+        handler.post(this);
+    }
+
+    @Override
+    public void run() {
+        if (counter < points.size()) {
+            LatLng point = points.get(counter++);
+            MarkerAnimation.animateMarkerToGB(marker, new LatLng(point.latitude,
+                    point.longitude), new LatLngInterpolator.Spherical());
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 18f));
+
+            handler.postDelayed(this, 2000);
+        }
     }
 }
