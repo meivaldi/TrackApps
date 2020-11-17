@@ -262,6 +262,7 @@ public class DetailTrackActivity extends AppCompatActivity implements OnMapReady
     @Override
     public void run() {
         if (counter < points.size()) {
+            Log.d("mylog", "Poin ke: " + counter);
             LatLng point = points.get(counter++);
             MarkerAnimation.animateMarkerToGB(marker, new LatLng(point.latitude,
                     point.longitude), new LatLngInterpolator.Spherical());
