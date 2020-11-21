@@ -36,11 +36,13 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 import com.meivaldi.trackerapps.api.ApiClient;
 import com.meivaldi.trackerapps.api.ApiInterface;
+import com.meivaldi.trackerapps.api.TaskLoadedCallback;
 import com.meivaldi.trackerapps.model.ApiResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
 import com.meivaldi.trackerapps.model.TPA;
@@ -54,7 +56,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, TaskLoadedCallback {
 
     private GoogleMap mMap;
     private FusedLocationProviderClient fusedLocationClient;
@@ -75,9 +77,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Button input;
     private Dialog inputDialog, cheklistDialog;
     private ApiInterface apiService;
-    private Button inputTPA;
     private EditText jumlahET;
-    private LocationCallback mLocationCallback;
 
     private int tpsId = 0, position = 0;
     private String ve_id = "";
@@ -117,7 +117,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         inputDialog.setCancelable(false);
         inputDialog.setContentView(R.layout.input_dialog);
         inputDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        inputTPA = inputDialog.findViewById(R.id.inputTPA);
+        Button inputTPA = inputDialog.findViewById(R.id.inputTPA);
         jumlahET = inputDialog.findViewById(R.id.jumlahET);
         inputTPA.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -231,7 +231,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         locationRequest.setInterval(10000);
         locationRequest.setFastestInterval(10000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        mLocationCallback = new LocationCallback() {
+        LocationCallback mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult == null) {
@@ -435,9 +435,23 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
 
                     int i = 0;
+                    double distance = 0.0f;
                     for (TPA tpa : tpaList) {
-                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                                Double.parseDouble(tpa.getLongitude())), marker.getPosition());
+                        try {
+                            distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                    Double.parseDouble(tpa.getLongitude())), marker.getPosition());
+                        } catch (NullPointerException e) {
+                            Log.e("Error", e.getMessage());
+                        } finally {
+                            SharedPreferences preferences = getSharedPreferences("akun", MODE_PRIVATE);
+                            String lat = preferences.getString("lat", "");
+                            String lng = preferences.getString("lng", "");
+
+                            LatLng newLoc = new LatLng(Double.parseDouble(lat), Double.parseDouble(lng));
+
+                            distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                    Double.parseDouble(tpa.getLongitude())), newLoc);
+                        }
 
                         if (distance <= MIN_DISTANCE && !tpa.isInput()) {
                             Log.d("DATA", "Position: " + position);
@@ -568,5 +582,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 + " Meter   " + meterInDec);
 
         return Radius * c;
+    }
+
+    private String getUrl(LatLng origin, LatLng dest, String directionMode) {
+        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
+        String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
+        String mode = "mode=" + directionMode;
+        String parameters = str_origin + "&" + str_dest + "&" + mode;
+        String output = "json";
+        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters + "&key=" + getString(R.string.api_key);
+
+        return url;
+    }
+
+    @Override
+    public void onTaskDone(Object... values) {
+        mMap.addPolyline((PolylineOptions) values[0]);
     }
 }

@@ -51,7 +51,6 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
     private List<Marker> markers = new ArrayList<>();
     private List<Coordinate> tracks = new ArrayList<>();
     private LatLng loc;
-    private Polyline currentPolyline;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -209,6 +208,6 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
 
     @Override
     public void onTaskDone(Object... values) {
-        currentPolyline = mMap.addPolyline((PolylineOptions) values[0]);
+        mMap.addPolyline((PolylineOptions) values[0]);
     }
 }

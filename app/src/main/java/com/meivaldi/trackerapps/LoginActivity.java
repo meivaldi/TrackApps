@@ -82,6 +82,8 @@ public class LoginActivity extends AppCompatActivity {
                                 editor.putBoolean("isLogin", true);
                                 editor.putString("ve_id", res.getVehicleId());
                                 editor.putString("name", res.getName());
+                                editor.putString("lat", res.getLat());
+                                editor.putString("lng", res.getLng());
                                 editor.putString("tipe", tipe);
 
                                 editor.apply();
