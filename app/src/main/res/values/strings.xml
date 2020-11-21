@@ -19,4 +19,5 @@
     <string name="menu_track">Lacak</string>
     <string name="menu_trace">Histori Perjalanan</string>
     <string name="api_key">AIzaSyCVcZFTO-4QVQFKbvVsMUgbFrdjLUp1YR0</string>
+    <string name="empty_lbl">Belum Ada Data!</string>
 </resources>

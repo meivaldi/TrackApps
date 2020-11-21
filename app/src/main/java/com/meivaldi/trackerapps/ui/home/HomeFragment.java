@@ -36,7 +36,7 @@ public class HomeFragment extends Fragment {
     private VehicleAdapter vehicleAdapter;
     private List<Vehicle> vehicleList = new ArrayList<>();
     private ProgressDialog pDialog;
-    private TextView jumlahMasuk;
+    private TextView jumlahMasuk, emptyLabel;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -44,6 +44,7 @@ public class HomeFragment extends Fragment {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
 
         jumlahMasuk = root.findViewById(R.id.totalMasuk);
+        emptyLabel = root.findViewById(R.id.emptyLbl);
         vehicleAdapter = new VehicleAdapter(getContext(), vehicleList);
         recyclerView = root.findViewById(R.id.recyclerView);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getContext());
@@ -65,9 +66,18 @@ public class HomeFragment extends Fragment {
             public void onResponse(Call<DashboardResponse> call, Response<DashboardResponse> response) {
                 DashboardResponse res = response.body();
 
-                jumlahMasuk.setText(res.getTotal() + " Ton");
-                vehicleList.addAll(res.getVehicleList());
-                vehicleAdapter.notifyDataSetChanged();
+                if (res.getVehicleList().size() == 0) {
+                    emptyLabel.setVisibility(View.VISIBLE);
+                    recyclerView.setVisibility(View.GONE);
+                } else {
+                    recyclerView.setVisibility(View.VISIBLE);
+                    emptyLabel.setVisibility(View.GONE);
+
+                    jumlahMasuk.setText(res.getTotal() + " Ton");
+                    vehicleList.addAll(res.getVehicleList());
+                    vehicleAdapter.notifyDataSetChanged();
+                }
+
                 pDialog.dismiss();
             }
 

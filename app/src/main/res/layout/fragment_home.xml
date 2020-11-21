@@ -76,7 +76,23 @@
                 android:layout_marginTop="20dp"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:scrollbars="none"
+                android:visibility="gone"
                 tools:listitem="@layout/item"/>
+
+            <TextView
+                android:id="@+id/emptyLbl"
+                android:layout_below="@id/recyclerView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/empty_lbl"
+                android:textStyle="bold"
+                android:textSize="32sp"
+                android:layout_marginTop="50dp"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:fontFamily="@font/source"
+                android:layout_gravity="center"/>
 
         </RelativeLayout>
 
