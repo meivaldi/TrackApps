@@ -46,12 +46,17 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences preferences = getSharedPreferences("akun", MODE_PRIVATE);
         boolean isLogin = preferences.getBoolean("isLogin", false);
         String tipe = preferences.getString("tipe", "");
+        String jenis = preferences.getString("jenis", "");
 
         if (isLogin) {
             if (tipe.equals("0")) {
                 startActivity(new Intent(getApplicationContext(), AdminActivity.class));
             } else {
-                startActivity(new Intent(getApplicationContext(), MapsActivity.class));
+                if (jenis.equals("0")) {
+                    startActivity(new Intent(getApplicationContext(), MapsActivity.class));
+                } else {
+                    startActivity(new Intent(getApplicationContext(), RouteActivity.class));
+                }
             }
         }
 
@@ -78,6 +83,7 @@ public class LoginActivity extends AppCompatActivity {
                                 SharedPreferences pref = getSharedPreferences("akun", MODE_PRIVATE);
                                 SharedPreferences.Editor editor = pref.edit();
                                 String tipe = res.getTipe();
+                                String jenis = res.getJenis();
 
                                 editor.putBoolean("isLogin", true);
                                 editor.putString("ve_id", res.getVehicleId());
@@ -85,12 +91,17 @@ public class LoginActivity extends AppCompatActivity {
                                 editor.putString("lat", res.getLat());
                                 editor.putString("lng", res.getLng());
                                 editor.putString("tipe", tipe);
+                                editor.putString("jenis", jenis);
 
                                 editor.apply();
                                 if (tipe.equals("0")) {
                                     startActivity(new Intent(getApplicationContext(), AdminActivity.class));
                                 } else {
-                                    startActivity(new Intent(getApplicationContext(), MapsActivity.class));
+                                    if (jenis.equals("0")) {
+                                        startActivity(new Intent(getApplicationContext(), MapsActivity.class));
+                                    } else {
+                                        startActivity(new Intent(getApplicationContext(), RouteActivity.class));
+                                    }
                                 }
                             } else {
                                 usernameET.setText("");

@@ -4,6 +4,7 @@ import com.meivaldi.trackerapps.model.ApiResponse;
 import com.meivaldi.trackerapps.model.CoordinateResponse;
 import com.meivaldi.trackerapps.model.DashboardResponse;
 import com.meivaldi.trackerapps.model.MarkerResponse;
+import com.meivaldi.trackerapps.model.RouteResponse;
 import com.meivaldi.trackerapps.model.TrackResponse;
 import com.meivaldi.trackerapps.model.UserResponse;
 import com.meivaldi.trackerapps.model.VehicleResponse;
@@ -48,4 +49,8 @@ public interface ApiInterface {
 
     @GET("dashboard.php")
     Call<DashboardResponse> getDashboard();
+
+    @FormUrlEncoded
+    @POST("get_routes.php")
+    Call<RouteResponse> getRoutes(@Field("ve_id") String ve_id);
 }

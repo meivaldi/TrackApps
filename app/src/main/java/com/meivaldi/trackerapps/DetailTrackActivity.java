@@ -126,8 +126,8 @@ public class DetailTrackActivity extends AppCompatActivity implements OnMapReady
         pDialog.show();
 
         LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(60000);
-        locationRequest.setFastestInterval(60000);
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(10000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         LocationCallback callback = new LocationCallback() {
             @Override

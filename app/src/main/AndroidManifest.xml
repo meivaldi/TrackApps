@@ -14,15 +14,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".DetailTrackActivity"
+        <activity android:name=".RouteActivity"></activity>
+        <activity
+            android:name=".DetailTrackActivity"
             android:screenOrientation="portrait" />
-        <activity android:name=".DetailMapsActivity"
+        <activity
+            android:name=".DetailMapsActivity"
             android:screenOrientation="portrait" />
         <activity
             android:name=".AdminActivity"
             android:label="@string/title_activity_admin"
-            android:theme="@style/AppTheme.NoActionBar"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".LoginActivity"
             android:screenOrientation="portrait" />
@@ -30,6 +33,7 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
+
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps"
@@ -43,12 +47,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
+
         <service
             android:name=".service.LocationService"
             android:enabled="true"
             android:exported="true" />
-        
+
         <receiver
             android:name=".receiver.RestartBackgroundService"
             android:enabled="true"
@@ -57,7 +61,6 @@
                 <action android:name="restartService" />
             </intent-filter>
         </receiver>
-        
     </application>
 
 </manifest>

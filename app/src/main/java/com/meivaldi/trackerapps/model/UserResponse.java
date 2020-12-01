@@ -24,7 +24,10 @@ public class UserResponse {
     @SerializedName("lng")
     private String lng;
 
-    public UserResponse(boolean status, String message, String name, String vehicleId, String tipe, String lat, String lng) {
+    @SerializedName("jenis")
+    private String jenis;
+
+    public UserResponse(boolean status, String message, String name, String vehicleId, String tipe, String lat, String lng, String jenis) {
         this.status = status;
         this.message = message;
         this.name = name;
@@ -32,6 +35,7 @@ public class UserResponse {
         this.tipe = tipe;
         this.lat = lat;
         this.lng = lng;
+        this.jenis = jenis;
     }
 
     public boolean isStatus() {
@@ -88,5 +92,13 @@ public class UserResponse {
 
     public void setLng(String lng) {
         this.lng = lng;
+    }
+
+    public String getJenis() {
+        return jenis;
+    }
+
+    public void setJenis(String jenis) {
+        this.jenis = jenis;
     }
 }
