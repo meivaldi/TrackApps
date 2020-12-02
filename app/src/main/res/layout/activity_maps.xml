@@ -51,14 +51,14 @@
         android:textColor="@android:color/white"
         android:elevation="10dp"
         android:drawableLeft="@drawable/baseline_done_white_18"
-        app:layout_constraintBottom_toTopOf="@+id/location"
+        app:layout_constraintBottom_toTopOf="@+id/start"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.900" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/location"
+        android:id="@+id/start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/fab_margin"
@@ -68,6 +68,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/map"
         app:layout_constraintVertical_bias="0.95"
-        app:srcCompat="@drawable/baseline_my_location_white_18" />
+        app:srcCompat="@drawable/baseline_play_arrow_white_18" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/fab_margin"
+        android:visibility="gone"
+        app:backgroundTint="@android:color/holo_red_dark"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/map"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/map"
+        app:layout_constraintVertical_bias="0.95"
+        app:srcCompat="@drawable/baseline_stop_white_18" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

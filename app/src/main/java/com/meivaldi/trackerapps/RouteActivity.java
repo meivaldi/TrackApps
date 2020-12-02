@@ -89,9 +89,7 @@ public class RouteActivity extends AppCompatActivity implements OnMapReadyCallba
     private Marker marker;
     private ProgressDialog pDialog;
     private Dialog inputDialog;
-    private EditText jumlahET, bbmRp, bbmLiter;
-    private AppCompatSpinner satuanSp;
-    private List<String> satuan;
+    private EditText jumlahET;
 
     private String[] permissionsRequired = new String[]{
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -139,71 +137,23 @@ public class RouteActivity extends AppCompatActivity implements OnMapReadyCallba
 
         Button inputTPA = inputDialog.findViewById(R.id.inputTPA);
         jumlahET = inputDialog.findViewById(R.id.jumlahET);
-        bbmRp = inputDialog.findViewById(R.id.bbmRp);
-        bbmLiter = inputDialog.findViewById(R.id.bbmLiter);
-        satuanSp = inputDialog.findViewById(R.id.satuanSP);
-
-        satuan = new ArrayList<>();
-        satuan.add("Rupiah");
-        satuan.add("Liter");
-
-        ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_spinner_item, satuan);
-        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        satuanSp.setAdapter(dataAdapter);
-        satuanSp.setSelection(0);
-
-        satuanSp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == 0) {
-                    bbmLiter.setVisibility(View.GONE);
-                    bbmRp.setVisibility(View.VISIBLE);
-                } else {
-                    bbmLiter.setVisibility(View.VISIBLE);
-                    bbmRp.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
 
         inputTPA.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String jumlah = jumlahET.getText().toString();
-                String satuanText = String.valueOf(satuanSp.getSelectedItemPosition());
-                String nilai = "";
-
-                if (satuanText == "0") {
-                    if (bbmRp.getText().toString().isEmpty()) {
-                        Toast.makeText(RouteActivity.this, "Harap masukkan jumlah uang yang dikeluarkan untuk BBM!", Toast.LENGTH_SHORT).show();
-                    } else {
-                        nilai = bbmRp.getText().toString();
-                    }
-                } else {
-                    if (bbmLiter.getText().toString().isEmpty()) {
-                        Toast.makeText(RouteActivity.this, "Harap masukkan berapa liter yang dikeluarkan untuk BBM!", Toast.LENGTH_SHORT).show();
-                    } else {
-                        nilai = bbmLiter.getText().toString();
-                    }
-                }
 
                 if (jumlah.isEmpty()) {
                     Toast.makeText(RouteActivity.this, "Harap masukkan jumlah!", Toast.LENGTH_SHORT).show();
                 } else {
                     ApiInterface apiService = ApiClient.getClient().create(ApiInterface.class);
-                    Call<ApiResponse> call = apiService.inputTpa(ve_id, jumlah, satuanText, nilai);
+                    Call<ApiResponse> call = apiService.inputTpa(ve_id, jumlah);
                     call.enqueue(new Callback<ApiResponse>() {
                         @Override
                         public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                             ApiResponse res = response.body();
                             Toast.makeText(RouteActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
                             inputDialog.dismiss();
-                            bbmLiter.setText("");
-                            bbmRp.setText("");
                             jumlahET.setText("");
                         }
 
@@ -453,8 +403,6 @@ public class RouteActivity extends AppCompatActivity implements OnMapReadyCallba
                     }
                 });
     }
-
-
 
     @Override
     public void onMapReady(GoogleMap googleMap) {

@@ -34,7 +34,7 @@ public interface ApiInterface {
 
     @FormUrlEncoded
     @POST("input_tpa.php")
-    Call<ApiResponse> inputTpa(@Field("ve_id") String ve_id, @Field("jumlah") String jumlah, @Field("satuan") String satuan, @Field("nilai") String nilai);
+    Call<ApiResponse> inputTpa(@Field("ve_id") String ve_id, @Field("jumlah") String jumlah);
 
     @POST("get_all_vehicle.php")
     Call<VehicleResponse> getAllVehicle();

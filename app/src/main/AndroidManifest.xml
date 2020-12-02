@@ -48,19 +48,6 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".service.LocationService"
-            android:enabled="true"
-            android:exported="true" />
-
-        <receiver
-            android:name=".receiver.RestartBackgroundService"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="restartService" />
-            </intent-filter>
-        </receiver>
     </application>
 
 </manifest>

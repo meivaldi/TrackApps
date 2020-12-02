@@ -3,31 +3,44 @@ package com.meivaldi.trackerapps;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -37,9 +50,18 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
+import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.single.PermissionListener;
 import com.meivaldi.trackerapps.api.ApiClient;
 import com.meivaldi.trackerapps.api.ApiInterface;
 import com.meivaldi.trackerapps.api.TaskLoadedCallback;
@@ -56,32 +78,44 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, TaskLoadedCallback {
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private FusedLocationProviderClient fusedLocationClient;
+    private Marker marker;
     private ProgressDialog pDialog;
 
     private List<TPA> tpaList = new ArrayList<>();
+    private List<Marker> markers = new ArrayList<>();
+
+    private Button input;
+    private Dialog inputDialog, cheklistDialog;
+    private ApiInterface apiService;
+    private EditText jumlahET;
+    private FloatingActionButton start, stop;
+
+    private FusedLocationProviderClient mFusedLocationClient;
+    private SettingsClient mSettingsClient;
+    private LocationRequest mLocationRequest;
+    private LocationSettingsRequest mLocationSettingsRequest;
+    private LocationCallback mLocationCallback;
+    private Location mCurrentLocation;
+
+    private Boolean mRequestingLocationUpdates = false;
+
+    private int tpsId = 0, position = 0;
+    private String ve_id = "";
 
     private String[] permissionsRequired = new String[]{
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
     };
 
+    //constant
     private static final int PERMISSION_CALLBACK_CONSTANT = 100;
     private static final double MIN_DISTANCE = 0.02;
-
-    private Marker marker;
-    private List<Marker> markers = new ArrayList<>();
-    private Button input;
-    private Dialog inputDialog, cheklistDialog;
-    private ApiInterface apiService;
-    private EditText jumlahET;
-
-    private int tpsId = 0, position = 0;
-    private String ve_id = "";
-    private Intent mServiceIntent;
+    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
+    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = 5000;
+    private static final int REQUEST_CHECK_SETTINGS = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,8 +151,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         inputDialog.setCancelable(false);
         inputDialog.setContentView(R.layout.input_dialog);
         inputDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
         Button inputTPA = inputDialog.findViewById(R.id.inputTPA);
         jumlahET = inputDialog.findViewById(R.id.jumlahET);
+
         inputTPA.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -127,7 +163,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (jumlah.isEmpty()) {
                     Toast.makeText(MapsActivity.this, "Harap masukkan jumlah!", Toast.LENGTH_SHORT).show();
                 } else {
-                    Call<ApiResponse> call = apiService.inputTpa(ve_id, jumlah, "", "");
+                    Call<ApiResponse> call = apiService.inputTpa(ve_id, jumlah);
                     call.enqueue(new Callback<ApiResponse>() {
                         @Override
                         public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
@@ -135,7 +171,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             Toast.makeText(MapsActivity.this, res.getMessage(), Toast.LENGTH_SHORT).show();
                             inputDialog.dismiss();
 
-                            logout();
+                            inputDialog.dismiss();
+                            jumlahET.setText("");
                         }
 
                         @Override
@@ -227,146 +264,225 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
 
-        LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(10000);
-        locationRequest.setFastestInterval(10000);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        LocationCallback mLocationCallback = new LocationCallback() {
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        mSettingsClient = LocationServices.getSettingsClient(this);
+        mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
-                if (locationResult == null) {
-                    return;
-                }
+                super.onLocationResult(locationResult);
+                mCurrentLocation = locationResult.getLastLocation();
 
-                for (Location location : locationResult.getLocations()) {
-                    if (location != null) {
-                        Log.d("DATA", location.getLatitude() + " " + location.getLongitude());
-                        LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-
-                        Call<ApiResponse> call = apiService.track(ve_id, String.valueOf(loc.latitude), String.valueOf(loc.longitude));
-                        call.enqueue(new Callback<ApiResponse>() {
-                            @Override
-                            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
-                                Log.d("DATA", response.body().getMessage());
-                            }
-
-                            @Override
-                            public void onFailure(Call<ApiResponse> call, Throwable t) {
-                                Log.e("DATA", "ERROR: " + t.getMessage());
-                            }
-                        });
-
-                        if (marker != null) marker.remove();
-                        marker = mMap.addMarker(new MarkerOptions()
-                                .position(loc)
-                                .title("Starter Point")
-                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
-
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
-
-                        int i = 0;
-                        for (TPA tpa : tpaList) {
-                            double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                                    Double.parseDouble(tpa.getLongitude())), loc);
-
-                            if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                                Log.d("DATA", "Position: " + position);
-                                Log.d("DATA", "id: " + tpsId);
-
-                                input.setVisibility(View.VISIBLE);
-                                tpsId = tpa.getId();
-                                position = i;
-
-                                break;
-                            } else {
-                                input.setVisibility(View.GONE);
-                            }
-
-                            i++;
-                            Log.d("DATA", "Distance: " + distance);
-                        }
-                    }
-                }
+                updateLocationUI();
             }
         };
-        LocationServices.getFusedLocationProviderClient(getApplicationContext()).requestLocationUpdates(locationRequest, mLocationCallback, null);
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        boolean status = preferences.getBoolean("request_update", false);
+        mRequestingLocationUpdates = status;
+
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(mLocationRequest);
+        mLocationSettingsRequest = builder.build();
+
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        FloatingActionButton location = findViewById(R.id.location);
-        location.setOnClickListener(new View.OnClickListener() {
+        start = findViewById(R.id.start);
+        stop = findViewById(R.id.stop);
+
+        start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("DEBUG", "Clicked");
-
-                if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                        && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    return;
-                }
-                fusedLocationClient.getLastLocation().addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
-                    @Override
-                    public void onSuccess(Location location) {
-                        if (location != null) {
-                            LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                            if (marker != null) marker.remove();
-                            marker = mMap.addMarker(new MarkerOptions()
-                                    .position(loc)
-                                    .title("Starter Point")
-                                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
-
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
-                            //MarkerAnimation.animateMarkerToGB(marker, loc, new LatLngInterpolator.Spherical());
-
-                            int i = 0;
-                            for (TPA tpa : tpaList) {
-                                double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
-                                        Double.parseDouble(tpa.getLongitude())), loc);
-
-                                if (distance <= MIN_DISTANCE && !tpa.isInput()) {
-                                    Log.d("DATA", "Position: " + position);
-                                    Log.d("DATA", "id: " + tpsId);
-
-                                    input.setVisibility(View.VISIBLE);
-                                    tpsId = tpa.getId();
-                                    position = i;
-                                    break;
-                                } else {
-                                    input.setVisibility(View.GONE);
-                                }
-
-                                i++;
-                                Log.d("DATA", "Distance: " + distance);
-                            }
-
-                        } else {
-                            Toast.makeText(MapsActivity.this, "Lokasi tidak ada!", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
+                startLocationButtonClick();
             }
         });
 
-        mServiceIntent = new Intent(getApplicationContext(), LocationService.class);
-        mServiceIntent.putExtra("ve_id", ve_id);
-        startService(mServiceIntent);
+        stop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopLocationButtonClick();
+            }
+        });
+    }
+
+    private void updateLocationUI() {
+        if (mCurrentLocation != null) {
+            Log.d("DATA", mCurrentLocation.getLatitude() + " " + mCurrentLocation.getLongitude());
+            LatLng loc = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+
+            Call<ApiResponse> call = apiService.track(ve_id, String.valueOf(loc.latitude), String.valueOf(loc.longitude));
+            call.enqueue(new Callback<ApiResponse>() {
+                @Override
+                public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                    Log.d("DATA", response.body().getMessage());
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse> call, Throwable t) {
+                    Log.e("DATA", "ERROR: " + t.getMessage());
+                }
+            });
+
+            if (marker != null) marker.remove();
+            marker = mMap.addMarker(new MarkerOptions()
+                    .position(loc)
+                    .title("Starter Point")
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
+
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
+
+            int i = 0;
+            for (TPA tpa : tpaList) {
+                double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                        Double.parseDouble(tpa.getLongitude())), loc);
+
+                if (distance <= MIN_DISTANCE && !tpa.isInput()) {
+                    Log.d("DATA", "Position: " + position);
+                    Log.d("DATA", "id: " + tpsId);
+
+                    input.setVisibility(View.VISIBLE);
+                    tpsId = tpa.getId();
+                    position = i;
+
+                    break;
+                } else {
+                    input.setVisibility(View.GONE);
+                }
+
+                i++;
+                Log.d("DATA", "Distance: " + distance);
+            }
+        }
+
+        toggleButtons();
+    }
+
+    private void toggleButtons() {
+        if (mRequestingLocationUpdates) {
+            stop.setVisibility(View.VISIBLE);
+            start.setVisibility(View.GONE);
+        } else {
+            start.setVisibility(View.VISIBLE);
+            stop.setVisibility(View.GONE);
+        }
+    }
+
+    private void startLocationUpdates() {
+        mSettingsClient
+                .checkLocationSettings(mLocationSettingsRequest)
+                .addOnSuccessListener(this, new OnSuccessListener<LocationSettingsResponse>() {
+                    @SuppressLint("MissingPermission")
+                    @Override
+                    public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+                        Log.i("STRADA", "All location settings are satisfied.");
+
+                        Toast.makeText(getApplicationContext(), "Tracking Aktif!", Toast.LENGTH_SHORT).show();
+
+                        mFusedLocationClient.requestLocationUpdates(mLocationRequest,
+                                mLocationCallback, Looper.myLooper());
+
+                        updateLocationUI();
+                    }
+                })
+                .addOnFailureListener(this, new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        int statusCode = ((ApiException) e).getStatusCode();
+                        switch (statusCode) {
+                            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                                Log.i("STRADA", "Location settings are not satisfied. Attempting to upgrade " +
+                                        "location settings ");
+                                try {
+                                    ResolvableApiException rae = (ResolvableApiException) e;
+                                    rae.startResolutionForResult(MapsActivity.this, REQUEST_CHECK_SETTINGS);
+                                } catch (IntentSender.SendIntentException sie) {
+                                    Log.i("STRADA", "PendingIntent unable to execute request.");
+                                }
+                                break;
+                            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                                String errorMessage = "Location settings are inadequate, and cannot be " +
+                                        "fixed here. Fix in Settings.";
+                                Log.e("STRADA", errorMessage);
+
+                                Toast.makeText(MapsActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                        }
+
+                        updateLocationUI();
+                    }
+                });
+    }
+
+    public void startLocationButtonClick() {
+        // Requesting ACCESS_FINE_LOCATION using Dexter library
+        Dexter.withActivity(this)
+                .withPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                .withListener(new PermissionListener() {
+                    @Override
+                    public void onPermissionGranted(PermissionGrantedResponse response) {
+                        mRequestingLocationUpdates = true;
+                        SharedPreferences.Editor editor = getSharedPreferences("akun", MODE_PRIVATE).edit();
+                        editor.putBoolean("request_update", true);
+                        editor.apply();
+
+                        startLocationUpdates();
+                    }
+
+                    @Override
+                    public void onPermissionDenied(PermissionDeniedResponse response) {
+                        if (response.isPermanentlyDenied()) {
+                            // open device settings when the permission is
+                            // denied permanently
+                            openSettings();
+                        }
+                    }
+
+                    @Override
+                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+                        token.continuePermissionRequest();
+                    }
+                }).check();
+    }
+
+    public void stopLocationButtonClick() {
+        mRequestingLocationUpdates = false;
+        SharedPreferences.Editor editor = getSharedPreferences("akun", MODE_PRIVATE).edit();
+        editor.putBoolean("request_update", false);
+        editor.apply();
+        stopLocationUpdates();
+    }
+
+    public void stopLocationUpdates() {
+        // Removing location updates
+        mFusedLocationClient
+                .removeLocationUpdates(mLocationCallback)
+                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        Toast.makeText(getApplicationContext(), "Tracking Berhenti!", Toast.LENGTH_SHORT).show();
+                        toggleButtons();
+                    }
+                });
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        mMap.setTrafficEnabled(false);
-        mMap.setIndoorEnabled(false);
-        mMap.setBuildingsEnabled(true);
-
         if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
 
-        fusedLocationClient.getLastLocation().addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
+        mMap = googleMap;
+        mMap.setTrafficEnabled(false);
+        mMap.setIndoorEnabled(false);
+        mMap.setBuildingsEnabled(true);
+        mMap.setMyLocationEnabled(true);
+
+        mFusedLocationClient.getLastLocation().addOnSuccessListener(MapsActivity.this, new OnSuccessListener<Location>() {
             @Override
             public void onSuccess(Location location) {
                 if (location != null) {
@@ -486,6 +602,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
+    private void openSettings() {
+        Intent intent = new Intent();
+        intent.setAction(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package",
+                BuildConfig.APPLICATION_ID, null);
+        intent.setData(uri);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -507,39 +634,24 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-
-        Log.d("LOCATION", "PAUSE");
-    }
-
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-
-        Log.d("LOCATION", "RESTART");
-    }
-
-    @Override
     protected void onResume() {
         super.onResume();
 
-        Log.d("LOCATION", "RESUME");
+        if (mRequestingLocationUpdates) {
+            startLocationUpdates();
+        }
+
+        updateLocationUI();
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onPause() {
+        super.onPause();
 
-        Log.d("LOCATION", "STOP");
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        stopService(mServiceIntent);
-
-        Log.d("LOCATION", "DESTROY");
+        if (mRequestingLocationUpdates) {
+            // pausing location updates
+            stopLocationUpdates();
+        }
     }
 
     private void logout() {
@@ -550,11 +662,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         editor.putString("ve_id", "");
         editor.putString("name", "");
         editor.putString("tipe", "");
+        editor.putString("jenis", "");
 
         editor.apply();
 
-        //fusedLocationClient.removeLocationUpdates(mLocationCallback);
-        stopService(mServiceIntent);
+        if (mRequestingLocationUpdates) {
+            stopLocationUpdates();
+        }
+
         startActivity(new Intent(getApplicationContext(), LoginActivity.class));
         finish();
     }
@@ -584,19 +699,4 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         return Radius * c;
     }
 
-    private String getUrl(LatLng origin, LatLng dest, String directionMode) {
-        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
-        String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
-        String mode = "mode=" + directionMode;
-        String parameters = str_origin + "&" + str_dest + "&" + mode;
-        String output = "json";
-        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters + "&key=" + getString(R.string.api_key);
-
-        return url;
-    }
-
-    @Override
-    public void onTaskDone(Object... values) {
-        mMap.addPolyline((PolylineOptions) values[0]);
-    }
 }

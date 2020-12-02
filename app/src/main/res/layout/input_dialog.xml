@@ -52,35 +52,9 @@
                     android:hint="Jumlah Sampah"
                     android:layout_gravity="center" />
 
-                <androidx.appcompat.widget.AppCompatSpinner
-                    android:id="@+id/satuanSP"
-                    android:layout_below="@id/jumlahET"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_marginTop="10dp"/>
-
-                <EditText
-                    android:id="@+id/bbmRp"
-                    android:layout_below="@id/satuanSP"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:hint="Jumlah BBM Terpakai (Dalam Rupiah)"
-                    android:layout_gravity="center" />
-
-                <EditText
-                    android:id="@+id/bbmLiter"
-                    android:layout_below="@id/bbmRp"
-                    android:visibility="gone"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:hint="Jumlah BBM Terpakai (Dalam Liter)"
-                    android:layout_gravity="center" />
-
                 <Button
                     android:id="@+id/inputTPA"
-                    android:layout_below="@id/bbmLiter"
+                    android:layout_below="@id/jumlahET"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="30dp"
