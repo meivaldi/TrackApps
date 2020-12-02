@@ -127,7 +127,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (jumlah.isEmpty()) {
                     Toast.makeText(MapsActivity.this, "Harap masukkan jumlah!", Toast.LENGTH_SHORT).show();
                 } else {
-                    Call<ApiResponse> call = apiService.inputTpa(ve_id, jumlah);
+                    Call<ApiResponse> call = apiService.inputTpa(ve_id, jumlah, "", "");
                     call.enqueue(new Callback<ApiResponse>() {
                         @Override
                         public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
