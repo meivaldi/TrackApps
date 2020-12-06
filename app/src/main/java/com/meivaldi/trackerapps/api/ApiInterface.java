@@ -53,4 +53,8 @@ public interface ApiInterface {
     @FormUrlEncoded
     @POST("get_routes.php")
     Call<RouteResponse> getRoutes(@Field("ve_id") String ve_id);
+
+    @FormUrlEncoded
+    @POST("tracking.php")
+    Call<RouteResponse> tracking(@Field("ve_id") String ve_id);
 }

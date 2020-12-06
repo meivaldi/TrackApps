@@ -15,11 +15,15 @@ public class CoordinateResponse {
     @SerializedName("lon")
     private String lon;
 
-    public CoordinateResponse(boolean status, String message, String lat, String lon) {
+    @SerializedName("koordinat")
+    private String koordinat;
+
+    public CoordinateResponse(boolean status, String message, String lat, String lon, String koordinat) {
         this.status = status;
         this.message = message;
         this.lat = lat;
         this.lon = lon;
+        this.koordinat = koordinat;
     }
 
     public boolean isStatus() {
@@ -52,5 +56,13 @@ public class CoordinateResponse {
 
     public void setLon(String lon) {
         this.lon = lon;
+    }
+
+    public String getKoordinat() {
+        return koordinat;
+    }
+
+    public void setKoordinat(String koordinat) {
+        this.koordinat = koordinat;
     }
 }
