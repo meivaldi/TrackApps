@@ -58,7 +58,7 @@ public class TraceFragment extends Fragment {
                 Intent intent = new Intent(getContext(), DetailMapsActivity.class);
                 intent.putExtra("lat", vehicle.getStartLatitude());
                 intent.putExtra("lon", vehicle.getStartLongitude());
-                intent.putExtra("icon", vehicle.getIcon());
+                intent.putExtra("icon", vehicle.getJenis());
                 intent.putExtra("ve_id", vehicle.getVeId());
                 getContext().startActivity(intent);
             }

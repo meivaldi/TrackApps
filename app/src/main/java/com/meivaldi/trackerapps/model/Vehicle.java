@@ -10,8 +10,8 @@ public class Vehicle {
     @SerializedName("nama")
     private String nama;
 
-    @SerializedName("icon")
-    private String icon;
+    @SerializedName("jenis")
+    private String jenis;
 
     @SerializedName("lat")
     private String startLatitude;
@@ -22,10 +22,10 @@ public class Vehicle {
     @SerializedName("total")
     private String total;
 
-    public Vehicle(String veId, String nama, String icon, String startLatitude, String startLongitude, String total) {
+    public Vehicle(String veId, String nama, String jenis, String startLatitude, String startLongitude, String total) {
         this.veId = veId;
         this.nama = nama;
-        this.icon = icon;
+        this.jenis = jenis;
         this.startLatitude = startLatitude;
         this.startLongitude = startLongitude;
         this.total = total;
@@ -47,12 +47,12 @@ public class Vehicle {
         this.nama = nama;
     }
 
-    public String getIcon() {
-        return icon;
+    public String getJenis() {
+        return jenis;
     }
 
-    public void setIcon(String icon) {
-        this.icon = icon;
+    public void setJenis(String jenis) {
+        this.jenis = jenis;
     }
 
     public String getStartLatitude() {

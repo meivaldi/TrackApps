@@ -56,7 +56,7 @@ public class DetailTrackActivity extends AppCompatActivity implements OnMapReady
     private ApiInterface apiService;
     private List<TPA> tpaList = new ArrayList<>();
     private List<Marker> markers = new ArrayList<>();
-    private  List<LatLng> points = new ArrayList<>();
+    private List<LatLng> points = new ArrayList<>();
     private LatLng loc;
     private Marker marker;
     private Handler handler;

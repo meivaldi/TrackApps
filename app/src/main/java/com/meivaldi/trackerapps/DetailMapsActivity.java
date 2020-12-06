@@ -97,22 +97,14 @@ public class DetailMapsActivity extends AppCompatActivity implements OnMapReadyC
         loc = new LatLng(Double.parseDouble(latitude), Double.parseDouble(longitude));
         int icon = 0;
 
-        if (iconRef.equals("1")) {
+        if (iconRef.equals("0")) {
             icon = R.drawable.truck;
-        } else if (iconRef.equals("2")) {
+        } else if (iconRef.equals("1")) {
             icon = R.drawable.truck2;
-        } else if (iconRef.equals("3")) {
+        } else if (iconRef.equals("2")) {
             icon = R.drawable.truck3;
-        } else if (iconRef.equals("4")) {
+        } else  {
             icon = R.drawable.truck4;
-        } else if (iconRef.equals("5")) {
-            icon = R.drawable.truck5;
-        } else if (iconRef.equals("6")) {
-            icon = R.drawable.truck6;
-        } else if (iconRef.equals("7")) {
-            icon = R.drawable.truck7;
-        } else if (iconRef.equals("8")) {
-            icon = R.drawable.truck8;
         }
 
         mMap.addMarker(new MarkerOptions()
