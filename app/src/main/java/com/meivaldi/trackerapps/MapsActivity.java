@@ -243,7 +243,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
                 builder.setTitle("Perizian Aplikasi");
                 builder.setMessage("Aplikasi ini membutuhkan lokasi Anda!");
-                builder.setPositiveButton("Grant", new DialogInterface.OnClickListener() {
+                builder.setPositiveButton("Izinkan", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.cancel();
@@ -252,10 +252,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 PERMISSION_CALLBACK_CONSTANT);
                     }
                 });
-                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                builder.setNegativeButton("Tidak", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.cancel();
+                        logout();
                     }
                 });
                 builder.show();
@@ -516,7 +517,39 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         Log.d("DATA", "Distance: " + distance);
                     }
                 } else {
-                    Toast.makeText(MapsActivity.this, "Lokasi tidak ada!", Toast.LENGTH_SHORT).show();
+                    SharedPreferences pref = getSharedPreferences("akun", MODE_PRIVATE);
+                    String lat = pref.getString("lat", "");
+                    String lng = pref.getString("lng", "");
+
+                    LatLng loc = new LatLng(Double.parseDouble(lat), Double.parseDouble(lng));
+                    marker = mMap.addMarker(new MarkerOptions()
+                            .position(loc)
+                            .title("Starter Point")
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.truck)));
+
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 18f));
+
+                    int i = 0;
+                    for (TPA tpa : tpaList) {
+                        double distance = calculationByDistance(new LatLng(Double.parseDouble(tpa.getLatitude()),
+                                Double.parseDouble(tpa.getLongitude())), loc);
+
+                        if (distance <= MIN_DISTANCE && !tpa.isInput()) {
+                            Log.d("DATA", "Position: " + position);
+                            Log.d("DATA", "id: " + tpsId);
+
+                            input.setVisibility(View.VISIBLE);
+                            tpsId = tpa.getId();
+                            position = i;
+
+                            break;
+                        } else {
+                            input.setVisibility(View.GONE);
+                        }
+
+                        i++;
+                        Log.d("DATA", "Distance: " + distance);
+                    }
                 }
             }
         });
