@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Strada</string>
+    <string name="app_name">Jakstrada</string>
     <string name="title_activity_maps">Map</string>
     <string name="login">Login</string>
     <string name="password_hint">Password</string>
