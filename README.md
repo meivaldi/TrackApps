@@ -4,3 +4,12 @@ Jakstrada adalah aplikasi pelacakan (tracking) dari kendaraan pengangkut sampah.
 
 ![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604943637.png?raw=true)
 ![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604943930.png?raw=true)
+![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604945071.png?raw=true)
+![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604945964.png?raw=true)
+![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604946065.png?raw=true)
+![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604946072.png?raw=true)
+![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604946398.png?raw=true)
+![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604946436.png?raw=true)
+![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604946720.png?raw=true)
+![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604947139.png?raw=true)
+![alt text](https://github.com/meivaldi/TrackApps/blob/master/screenshoot/Screenshot_1604947265.png?raw=true)
